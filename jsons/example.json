@@ -1,0 +1,53 @@
+{
+    "feature_generator": "Deep_Q_Learning",
+    "mode": "aggregate_features",
+    "config": {
+        "window_size": 44,
+        "window_slide": 1,
+        "number_of_bytes": 58,
+        "multiclass": false,
+        "labeling_schema": "TOW_IDS_dataset_one_class",
+        "dataset": "TOW_IDS_dataset",
+        "remove_attack": null,
+        "suffix": "train",
+        "aggregation_method": "Entropy",
+        "sum_x": false,
+        "randomize": false,
+        "reduced_dataset": [false, 5]
+    },
+    "paths": {
+        "training_packets_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/raw_dataset/Automotive_Ethernet_with_Attack_original_10_17_19_50_training.pcap",
+        "test_packets_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/raw_dataset/Automotive_Ethernet_with_Attack_original_10_17_20_04_test.pcap",
+        "y_train_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/raw_dataset/y_train.csv",
+        "y_test_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/raw_dataset/y_test.csv",
+        "output_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/processed_train"
+    },
+    "load_paths": {
+        "X_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/processed_train/X_train_TOW_IDS_dataset_one_class_Wsize_44_Cols_116_Wslide_1_MC_False_sumX_False_removedAttacks_['P_I'].npz",
+        "y_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/processed_train/y_train_TOW_IDS_dataset_one_class_Wsize_44_Cols_116_Wslide_1_MC_False_sumX_False_removedAttacks_['P_I'].csv",
+        "output_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/aggregated_npz/removed_aggregated_train"
+    },
+    "dataset_train_load_paths": {
+        "X_path":"/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/aggregated_npz/X_train_TOW_IDS_dataset_one_class_Entropy.npz",
+        "y_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/aggregated_npz/Y_train_TOW_IDS_dataset_one_class_Entropy.npz" 
+    },
+    "dataset_test_load_paths": {
+        "X_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/aggregated_npz/X_train_TOW_IDS_dataset_one_class_Entropy.npz",
+        "y_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/aggregated_npz/Y_train_TOW_IDS_dataset_one_class_Entropy.npz"
+    },
+    "config_model": {
+        "algorithm": "DQL",
+        "feature_size": 116,
+        "batch_size": 32,
+        "alpha": 0.0001,
+        "gamma": 0.99,
+        "epsilon": 0.1,
+        "epsilon_min": 0.01,
+        "memory_size": 10000,
+        "n_episodes": 1000,
+        "n_steps": 1000,
+        "positive_reward": 1,
+        "negative_reward": -1,
+        "metric": ["Accuracy", "Recall", "F1_Score", "Precision", "ConfusionMatrix"] 
+    }
+}

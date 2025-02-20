@@ -1,0 +1,6 @@
+-e .
+pandas
+scikit-learn
+numpy
+scapy
+torch
