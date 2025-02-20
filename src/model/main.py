@@ -27,7 +27,7 @@ def main():
         features_names.append(f"feat_{i}")
         
     # Load model    
-    model = model_generator.ModelGenerator(config, features_names)
+    model = model_generator.DQLModelGenerator(config, features_names)
     
     feature_generator_name = config['feature_generator']
     feature_generator_config = config['config']
