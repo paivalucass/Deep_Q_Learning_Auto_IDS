@@ -3,6 +3,8 @@ import time
 import json
 import argparse
 import pickle
+import matplotlib.pyplot as plt
+
 
 
 def main():
@@ -33,10 +35,11 @@ def main():
     feature_generator_config = config['config']
     feature_generator_paths = config['paths']
     feature_generator_load_paths = config['load_paths']
-    mode = config["mode"]
     
     trained_model_saving_folder = config["config_model"]["pkl_saving_path"]
-    trained_model_saving_path = f"{trained_model_saving_folder}/TRAINED_{feature_generator_config['labeling_schema']}_AggregationMethod_{feature_generator_config['aggregation_method']}_Wsize_{feature_generator_config['window_size']}_Cols_{feature_generator_config['number_of_bytes'] * 2}_Wslide_{feature_generator_config['window_slide']}_MC_{feature_generator_config['multiclass']}_Algorithm_{config['config_model']['algorithm']}_RemovedAttack_{feature_generator_config['remove_attack']}.pkl"
-
+    
+    
+    
+    
 if __name__ == "__main__":
     main()

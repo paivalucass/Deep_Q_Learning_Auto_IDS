@@ -1,6 +1,6 @@
 {
     "feature_generator": "Deep_Q_Learning",
-    "mode": "aggregate_features",
+    "mode": null,
     "config": {
         "window_size": 44,
         "window_slide": 1,
@@ -48,6 +48,7 @@
         "n_steps": 1000,
         "positive_reward": 1,
         "negative_reward": -1,
+        "replay_capacity": 100000,
         "metric": ["Accuracy", "Recall", "F1_Score", "Precision", "ConfusionMatrix"] 
     }
 }
