@@ -41,9 +41,9 @@ class ReplayMemory():
         return len(self.memory)
 
 class Environment():
-    def __init__(self, config: typing.Dict):
+    def __init__(self, config: typing.Dict, dataset: typing.Dict):
         self._env_index = 0
-        self._env, self._env_labels = self.__build_dataset(config["dataset_train_load_paths"])
+        self._env, self._env_labels = self.__build_dataset(dataset)
         self._positive_reward = config["config_model"]["positive_reward"]
         self._negative_reward = config["config_model"]["negative_reward"]
 
@@ -70,11 +70,11 @@ class Environment():
         else:
             return self._negative_reward
         
-    def __reset_env(self):
+    def reset_env(self):
         self._env_index = 0
         return self._env[0]
         
-    def __step_env(self, action):
+    def step_env(self, action):
         done = 0
         action = action.item()
         reward = torch.tensor(self.__compute_reward(action)).view(1, -1).float()
@@ -83,7 +83,7 @@ class Environment():
         if self._env_index == self._env.shape[0]:
             done = 1
         done = torch.tensor(done).view(1, -1)
-        return next_state, reward, done
+        return next_state, reward, done    
 
 class DQLModelGenerator():
     def __init__(self, config: typing.Dict, features_names):
@@ -96,15 +96,16 @@ class DQLModelGenerator():
         self._epsilon = config["config_model"]["epsilon"]
         self._epsilon_min = config["config_model"]["epsilon_min"]
         self._memory_size = config["config_model"]["memory_size"]
-        self._n_episodes = config["config_model"]["n_episodes"]
+        self._n_episodes_train = config["config_model"]["n_episodes_train"]
+        self._n_episodes_test = config["config_model"]["n_episodes_test"]
         self._n_steps = config["config_model"]["n_steps"]
         self._replay_memory = ReplayMemory(config)
-        self._environment = Environment(config)
-        self._target_q_network = copy.deepcopy(self._q_network).eval()
-        self._q_network = self.__build_network()
-        
-        self._deep_q_learning()
-        
+        self._environment_train = Environment(config, config["dataset_train_load_paths"])
+        self._environment_test = Environment(config, config["dataset_train_test_paths"])
+        self.q_network = self.__build_network()
+        self._target_q_network = copy.deepcopy(self.q_network).eval()
+
+            
     def __build_network(self):
         return nn.Sequential(
             nn.Linear(self._state_size, 128),
@@ -118,13 +119,13 @@ class DQLModelGenerator():
         if torch.rand(1) < self._epsilon:
             return torch.randint(NUM_ACTIONS, (1,1))
         else:
-            av = self._q_network(state).detach()
+            av = self.q_network(state).detach()
             return torch.argmax(av, dim = 1, keepdim=True)
             
     def _deep_q_learning(self):
         """ Initialize Neural Network Optimizer """
         
-        optim = AdamW(self._q_network.parameters(), lr=self._alpha)
+        optim = AdamW(self.q_network.parameters(), lr=self._alpha)
         stats = {'MSE Loss': [], 'Returns': []}
 
         """ Episode Loop
@@ -134,7 +135,7 @@ class DQLModelGenerator():
         for episode in tqdm(range(1, self._n_episodes + 1)):
                         
             # Reset the environment every time it starts a new episode 
-            state = self._environment.__reset_env()
+            state = self._environment_train.reset_env()
             done = False
             ep_return = 0
 
@@ -145,7 +146,7 @@ class DQLModelGenerator():
                 # Calculate an action to be taken, based on the policy output
                 action = self.__policy(state)
                 # Apply the action at the enviroment and returns new state and reward 
-                next_state, reward, done = self._environment.__step_env(action)
+                next_state, reward, done = self._environment_train.step_env(action)
                 # Insert the transition in the replay memory so it can be used by the Q-Network 
                 self._replay_memory.insert([state, action, reward, done, next_state])
                 
@@ -154,17 +155,17 @@ class DQLModelGenerator():
                     # Takes a batch of transitions 
                     state_batch, action_batch, reward_batch, done_batch, next_state_batch = self._replay_memory.sample()
                     # Pass the batches through the neural network and collects only the q-values taken by the policy 
-                    qsa_b = self._q_network(state_batch).gather(1, action_batch)
+                    qsa_b = self.q_network(state_batch).gather(1, action_batch)
                     
                     # Calculate the q-value for the next state batch 
                     next_qsa_b = self._target_q_network(next_state_batch)
                     next_qsa_b = torch.max(next_qsa_b, dim=-1, keepdim=True)[0]
 
                     # Calculate the target q-value batch 
-                    target_b = reward_batch + ~done_batch * self._gamma * next_qsa_b
+                    target_b = reward_batch + (1 - done_batch) * self._gamma * next_qsa_b
                     # Calculate the mean squared error (loss function)
                     loss = F.mse_loss(qsa_b, target_b)
-                    self._q_network.zero_grad()
+                    self.q_network.zero_grad()
                     # Do the backpropagation 
                     loss.backward()
                     # Update the neural network weights and biases
@@ -178,6 +179,26 @@ class DQLModelGenerator():
             stats["Returns"].append(ep_return)
             
             if episode % 10 == 0:
-                self._target_q_network.load_state_dict(self._q_network.state_dict())
+                self._target_q_network.load_state_dict(self.q_network.state_dict())
 
         return stats        
+    
+    def test_model(self):
+        y_true = []
+        y_pred = []
+
+        for episode in range(self._n_episodes_test):
+            state = self._environment_test.reset_env() 
+            done = False
+
+            while not done:
+                action = self.__policy(state).item()  
+                
+                y_true.append(self._environment_test._env_labels[self._environment_test._env_index])  
+                y_pred.append(action)
+
+                next_state, reward, done = self._environment_test.step_env(action)
+                state = next_state
+
+        print("Classification Report:")
+        print(classification_report(y_true, y_pred, target_names=["Normal", "Intrusion"]))
