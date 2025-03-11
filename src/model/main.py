@@ -30,10 +30,11 @@ def main():
     stats = dql._deep_q_learning()
     q_network = dql.q_network
     
-    with open("q_network.pkl", "wb") as file:
+    with open("/clusterlivenfs/lcap/ids-online/Deep_Q_Learning_Auto_IDS/trained_models/dql.pkl", "wb") as file:
         pickle.dump(q_network, file)
         
-    print(stats)
+    with open("/clusterlivenfs/lcap/ids-online/Deep_Q_Learning_Auto_IDS/trained_models/stats.pkl", "wb") as file:
+        pickle.dump(stats, file)
     
     dql.test_model()
     

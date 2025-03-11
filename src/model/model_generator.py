@@ -19,7 +19,6 @@ class ReplayMemory():
         self.memory = []
         self.position = 0
 
-    
     def insert(self, transition):
         if len(self.memory) < self.capacity:
             self.memory.append(None)
@@ -27,10 +26,10 @@ class ReplayMemory():
         self.memory[self.position] = transition
         self.position = (self.position + 1) % self.capacity
         
-    def sample(self, batch_size):
-        assert self.can_sample(batch_size)
+    def sample(self):
+        assert self.can_sample()
         
-        batch = random.sample(self.memory, batch_size)
+        batch = random.sample(self.memory, self._batch_size)
         batch = zip(*batch)
         return [torch.cat(items) for items in batch]
         
@@ -55,6 +54,10 @@ class Environment():
         labels_array = np.load(paths_dictionary["y_path"])
         labels_array = labels_array.f.arr_0
         
+        num_samples = min(1000, len(features_array))  
+        features_array = features_array[:num_samples]
+        labels_array = labels_array[:num_samples]
+        
         print(f"Built dataset with shape: {features_array.shape}")
         
         return features_array, labels_array
@@ -72,16 +75,16 @@ class Environment():
         
     def reset_env(self):
         self._env_index = 0
-        return self._env[0]
+        return torch.from_numpy(self._env[0]).unsqueeze(dim=0).float()
         
     def step_env(self, action):
         done = 0
         action = action.item()
         reward = torch.tensor(self.__compute_reward(action)).view(1, -1).float()
         self._env_index += 1
-        next_state = torch.from_numpy(self._env[self._env_index]).unsqueeze(dim=0).float()
-        if self._env_index == self._env.shape[0]:
+        if self._env_index == self._env.shape[0] - 1:
             done = 1
+        next_state = torch.from_numpy(self._env[self._env_index]).unsqueeze(dim=0).float()
         done = torch.tensor(done).view(1, -1)
         return next_state, reward, done    
 
@@ -101,7 +104,7 @@ class DQLModelGenerator():
         self._n_steps = config["config_model"]["n_steps"]
         self._replay_memory = ReplayMemory(config)
         self._environment_train = Environment(config, config["dataset_train_load_paths"])
-        self._environment_test = Environment(config, config["dataset_train_test_paths"])
+        self._environment_test = Environment(config, config["dataset_test_load_paths"])
         self.q_network = self.__build_network()
         self._target_q_network = copy.deepcopy(self.q_network).eval()
 
@@ -132,7 +135,7 @@ class DQLModelGenerator():
         
         Every episode is a run over the whole dataset. (while not done) """
         
-        for episode in tqdm(range(1, self._n_episodes + 1)):
+        for episode in tqdm(range(1, self._n_episodes_train + 1)):
                         
             # Reset the environment every time it starts a new episode 
             state = self._environment_train.reset_env()
@@ -192,10 +195,10 @@ class DQLModelGenerator():
             done = False
 
             while not done:
-                action = self.__policy(state).item()  
+                action = self.__policy(state) 
                 
                 y_true.append(self._environment_test._env_labels[self._environment_test._env_index])  
-                y_pred.append(action)
+                y_pred.append(action.item())
 
                 next_state, reward, done = self._environment_test.step_env(action)
                 state = next_state
