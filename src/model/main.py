@@ -10,7 +10,7 @@ def main():
     parser = argparse.ArgumentParser(description='Execute feature generation step')
     parser.add_argument('--config', required=True, help='JSON File containing the configs for the specified feature generation method')
     args = parser.parse_args()
-    # AA
+    # A
     try:
         with open(args.config, 'r') as config:
             config = json.load(config)
