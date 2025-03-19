@@ -211,7 +211,7 @@ class DQLModelGenerator():
             state = next_state
 
         print("Classification Report:")
-        print(classification_report(y_true, y_pred, target_names=["Normal", "Intrusion"]))
+        print(classification_report(y_true, y_pred, target_names=["Intrusion", "Normal"]))
         
         print("\nConfusion Matrix:")
         cm = confusion_matrix(y_true, y_pred)
