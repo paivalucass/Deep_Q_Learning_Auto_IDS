@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 def main():
     parser = argparse.ArgumentParser(description='Execute feature generation step')
     parser.add_argument('--config', required=True, help='JSON File containing the configs for the specified feature generation method')
+    parser.add_argument('--mode', required=True, help='Train or Test mode')
     args = parser.parse_args()
-    # A
+    
     try:
         with open(args.config, 'r') as config:
             config = json.load(config)
@@ -24,20 +25,28 @@ def main():
     for i in range(config["config_model"]["feature_size"]):
         features_names.append(f"feat_{i}")
         
-    # Load model    
-    dql = model_generator.DQLModelGenerator(config, features_names)
-    
-    stats = dql._deep_q_learning()
-    q_network = dql.q_network
-    
-    with open("/clusterlivenfs/lcap/ids-online/Deep_Q_Learning_Auto_IDS/trained_models/dql.pkl", "wb") as file:
-        pickle.dump(q_network, file)
+    if args.mode == "Train":
+        # Load model    
+        dql = model_generator.DQLModelGenerator(config, features_names)
         
-    with open("/clusterlivenfs/lcap/ids-online/Deep_Q_Learning_Auto_IDS/trained_models/stats.pkl", "wb") as file:
-        pickle.dump(stats, file)
-    
-    dql.test_model()
-    
-    
+        stats = dql._deep_q_learning()
+        q_network = dql.q_network
+        
+        with open("/home/slurm/pesgradivn/lcap/ids-online/Deep_Q_Learning_Auto_IDS/trained_models/dql_3.pkl", "wb") as file:
+            pickle.dump(q_network, file)
+            
+        with open("/home/slurm/pesgradivn/lcap/ids-online/Deep_Q_Learning_Auto_IDS/trained_models/stats_3.pkl", "wb") as file:
+            pickle.dump(stats, file)
+        
+        dql.test_model()
+    else:
+        dql = model_generator.DQLModelGenerator(config, features_names)
+        stats = None
+        
+        with open("/home/slurm/pesgradivn/lcap/ids-online/Deep_Q_Learning_Auto_IDS/trained_models/dql_2.pkl", "rb") as file:
+            dql.q_network = pickle.load(file)
+        
+        dql.test_model()
+        
 if __name__ == "__main__":
     main()

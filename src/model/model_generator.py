@@ -7,7 +7,7 @@ import random
 import torch.nn.functional as F
 from torch import nn as nn
 from torch.optim import AdamW
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, confusion_matrix
 from tqdm import tqdm
 
 NUM_ACTIONS = 2
@@ -19,6 +19,7 @@ class ReplayMemory():
         self.memory = []
         self.position = 0
 
+    
     def insert(self, transition):
         if len(self.memory) < self.capacity:
             self.memory.append(None)
@@ -26,13 +27,13 @@ class ReplayMemory():
         self.memory[self.position] = transition
         self.position = (self.position + 1) % self.capacity
         
-    def sample(self):
+    def sample(self): # Modifed the sampling from random to sequential
         assert self.can_sample()
-        
-        batch = random.sample(self.memory, self._batch_size)
+        start_idx = random.randint(self._batch_size, len(self.memory) - self._batch_size)
+        batch = self.memory[start_idx:start_idx + self._batch_size]
         batch = zip(*batch)
         return [torch.cat(items) for items in batch]
-        
+
     def can_sample(self):
         return len(self.memory) >= self._batch_size * 10
         
@@ -54,9 +55,14 @@ class Environment():
         labels_array = np.load(paths_dictionary["y_path"])
         labels_array = labels_array.f.arr_0
         
-        num_samples = min(1000, len(features_array))  
-        features_array = features_array[:num_samples]
-        labels_array = labels_array[:num_samples]
+        if len(features_array) > 1000000:
+            #num_samples = min(138000, )  
+            features_array = features_array[138000:230000]
+            labels_array = labels_array[138000:230000]
+        
+        else:
+            features_array = features_array[154000:245000]
+            labels_array = labels_array[154000:245000]
         
         print(f"Built dataset with shape: {features_array.shape}")
         
@@ -82,9 +88,9 @@ class Environment():
         action = action.item()
         reward = torch.tensor(self.__compute_reward(action)).view(1, -1).float()
         self._env_index += 1
+        next_state = torch.from_numpy(self._env[self._env_index]).unsqueeze(dim=0).float()
         if self._env_index == self._env.shape[0] - 1:
             done = 1
-        next_state = torch.from_numpy(self._env[self._env_index]).unsqueeze(dim=0).float()
         done = torch.tensor(done).view(1, -1)
         return next_state, reward, done    
 
@@ -124,7 +130,11 @@ class DQLModelGenerator():
         else:
             av = self.q_network(state).detach()
             return torch.argmax(av, dim = 1, keepdim=True)
-            
+    
+    def __policy_test(self, state):
+        av = self.q_network(state).detach()
+        return torch.argmax(av, dim = 1, keepdim=True)
+        
     def _deep_q_learning(self):
         """ Initialize Neural Network Optimizer """
         
@@ -190,18 +200,21 @@ class DQLModelGenerator():
         y_true = []
         y_pred = []
 
-        for episode in range(self._n_episodes_test):
-            state = self._environment_test.reset_env() 
-            done = False
+        state = self._environment_test.reset_env() 
+        done = False
 
-            while not done:
-                action = self.__policy(state) 
-                
-                y_true.append(self._environment_test._env_labels[self._environment_test._env_index])  
-                y_pred.append(action.item())
-
-                next_state, reward, done = self._environment_test.step_env(action)
-                state = next_state
+        while not done:
+            action = self.__policy_test(state) 
+            
+            y_true.append(self._environment_test._env_labels[self._environment_test._env_index])  
+            y_pred.append(action.item())
+            print("Real: ", y_true, " Pred: ", y_pred)
+            next_state, reward, done = self._environment_test.step_env(action)
+            state = next_state
 
         print("Classification Report:")
         print(classification_report(y_true, y_pred, target_names=["Normal", "Intrusion"]))
+        
+        print("\nConfusion Matrix:")
+        cm = confusion_matrix(y_true, y_pred)
+        print(cm)
