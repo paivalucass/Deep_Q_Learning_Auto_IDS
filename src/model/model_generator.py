@@ -3,7 +3,9 @@ import typing
 import logging
 import torch
 import copy
+import time
 import random
+import logging
 import torch.nn.functional as F
 from torch import nn as nn
 from torch.optim import AdamW
@@ -11,6 +13,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 from tqdm import tqdm
 
 NUM_ACTIONS = 2
+LOG_FILE_PATH = "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/output/metrics.log"
 
 class ReplayMemory():
     def __init__(self, config: typing.Dict):
@@ -18,7 +21,6 @@ class ReplayMemory():
         self._batch_size = config["config_model"]["batch_size"]
         self.memory = []
         self.position = 0
-
     
     def insert(self, transition):
         if len(self.memory) < self.capacity:
@@ -111,8 +113,18 @@ class DQLModelGenerator():
         self._replay_memory = ReplayMemory(config)
         self._environment_train = Environment(config, config["dataset_train_load_paths"])
         self._environment_test = Environment(config, config["dataset_test_load_paths"])
+        self._logger = logging.getLogger(__name__)
+        logging.basicConfig(
+        filename=LOG_FILE_PATH,  
+        filemode='a',         
+        format='%(asctime)s - %(levelname)s - %(message)s', 
+        level=logging.INFO)   
         self.q_network = self.__build_network()
         self._target_q_network = copy.deepcopy(self.q_network).eval()
+        self._start_time = 0
+        self._end_time = 0
+        self._c_report = None
+        self._confusion_matrix = None
             
     def __build_network(self):
         return nn.Sequential(
@@ -201,6 +213,8 @@ class DQLModelGenerator():
 
         state = self._environment_test.reset_env() 
         done = False
+        
+        self._start_time = time.time()
 
         while not done:
             action = self.__policy_test(state) 
@@ -209,10 +223,43 @@ class DQLModelGenerator():
             y_pred.append(action.item())
             next_state, reward, done = self._environment_test.step_env(action)
             state = next_state
+            
+        self._end_time = time.time()
 
         print("Classification Report:")
-        print(classification_report(y_true, y_pred, target_names=["Intrusion", "Normal"]))
+        self._c_report = classification_report(y_true, y_pred, target_names=["Intrusion", "Normal"])
+        print(self._c_report)
         
         print("\nConfusion Matrix:")
-        cm = confusion_matrix(y_true, y_pred)
-        print(cm)
+        self._confusion_matrix = confusion_matrix(y_true, y_pred)
+        print(self._confusion_matrix)
+        
+    def save_metric(self, config: typing.Dict):
+        
+        data_config = config["config"]
+        model_config = config["config_model"]
+        
+        elapsed_time = self._end_time - self._start_time
+
+        log = ""
+            
+        log = f""" ALGORITHM: {model_config["algorithm"]} 
+                            DATA: {data_config["labeling_schema"]}
+                            BATCH SIZE: {model_config["batch_size"]} 
+                            ALPHA: {model_config["alpha"]} 
+                            GAMMA: {model_config["gamma"]} 
+                            EPSILON: {model_config["epsilon"]} 
+                            EPSILON_MIN: {model_config["epsilon_min"]} 
+                            MEMORY_SIZE: {model_config["memory_size"]} 
+                            NUMBER OF EPISODES TRAIN: {model_config["n_episodes_train"]}
+                            NUMBER OF STEPS: {model_config["n_steps"]} 
+                            POSITIVE REWARD: {model_config["positive_reward"]}
+                            NEGATIVE REWARD: {model_config["negative_reward"]}
+                            ATTACK TRAIN: {model_config["attack_train"]}
+                            ATTACK TEST: {model_config["attack_test"]}
+                            POLICY_TEST: {model_config["policy_test"]}
+                            ELAPSED_TIME: {elapsed_time} Seconds
+                            TIME_PER_SAMPLE: {elapsed_time/len(self._environment_test._env_labels)} Seconds
+                            | GENERAL ACCURACY {self._c_report['accuracy']} | PRECISION NORMAL {self._c_report['0']['precision']} | RECALL NORMAL {self._c_report['0']['recall']} | F1-SCORE NORMAL {self._c_report['0']['f1-score']} | PRECISION ANOMALY {self._c_report['1']['precision']} | RECALL ANOMALY {self._c_report['1']['recall']} | F1-SCORE ANOMALY {self._c_report['1']['f1-score']} |"""
+                            
+        self._logger.info(log)

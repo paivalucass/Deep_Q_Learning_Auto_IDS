@@ -37,6 +37,9 @@
     },
     "config_model": {
         "algorithm": "DQL",
+        "attack_train": "C_D",
+        "attack_test": "C_D",
+        "policy_test": "exploitation",
         "feature_size": 116,
         "batch_size": 32,
         "alpha": 0.0001,
