@@ -27,6 +27,8 @@ fi
 
 cd ..
 
+echo "$PYTHON_PATH/$PYTHON_FILE"
+
 if [ -f "$PYTHON_PATH/$PYTHON_FILE" ]; then 
     echo Running python script from $PYTHON_PATH...
     python3 $PYTHON_PATH/$PYTHON_FILE --config $JSON_PATH --mode "Test"
