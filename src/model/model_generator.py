@@ -113,7 +113,6 @@ class DQLModelGenerator():
         self._environment_test = Environment(config, config["dataset_test_load_paths"])
         self.q_network = self.__build_network()
         self._target_q_network = copy.deepcopy(self.q_network).eval()
-
             
     def __build_network(self):
         return nn.Sequential(

@@ -16,8 +16,7 @@ else
 
 fi
 # Check if requirements.txt exists
-if [ -f "$REPOSITORY_PATH/requirements.txt" ]; then
-    cd $REPOSITORY_PATH
+if [ -f "requirements.txt" ]; then
     pip install -e .
     echo "Installing packages from requirements.txt..."
     pip install -r requirements.txt
