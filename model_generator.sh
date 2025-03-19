@@ -3,9 +3,9 @@
 # Define the virtual environment directory
 VENV_DIR="lacpvenv"
 REPOSITORY_PATH="Deep_Q_Learning_Auto_IDS"
-PYTHON_PATH="Deep_Q_Learning_Auto_IDS/src/model"
+PYTHON_PATH="src/model"
 PYTHON_FILE="main.py"
-JSON_PATH="Deep_Q_Learning_Auto_IDS/model_jsons/dql.json"
+JSON_PATH="jsons/dql.json"
 
 if [ -d "$VENV_DIR" ]; then
     echo "Activating virtual environment..."
