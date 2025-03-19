@@ -207,7 +207,6 @@ class DQLModelGenerator():
             
             y_true.append(self._environment_test._env_labels[self._environment_test._env_index])  
             y_pred.append(action.item())
-            print("Real: ", y_true, " Pred: ", y_pred)
             next_state, reward, done = self._environment_test.step_env(action)
             state = next_state
 
