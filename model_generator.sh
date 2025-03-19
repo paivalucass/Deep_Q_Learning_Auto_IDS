@@ -5,7 +5,7 @@ VENV_DIR="lacpvenv"
 REPOSITORY_PATH="Deep_Q_Learning_Auto_IDS"
 PYTHON_PATH="/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/src/model"
 PYTHON_FILE="main.py"
-JSON_PATH="jsons/dql.json"
+JSON_PATH="/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/jsons/dql.json"
 
 if [ -d "$VENV_DIR" ]; then
     echo "Activating virtual environment..."
