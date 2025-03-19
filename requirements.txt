@@ -4,3 +4,5 @@ scikit-learn
 numpy
 scapy
 torch
+tdqm
+matplotlib
