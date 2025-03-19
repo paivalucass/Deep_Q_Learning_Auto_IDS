@@ -13,9 +13,8 @@ if [ -d "$VENV_DIR" ]; then
 else
     python3 -m venv $VENV_DIR
     echo "$VENV_DIR virtual environment not found, creating one..."
-    source "$VENV_DIR/bin/activate"
-fi
 
+fi
 # Check if requirements.txt exists
 if [ -f "$REPOSITORY_PATH/requirements.txt" ]; then
     cd $REPOSITORY_PATH
@@ -31,7 +30,7 @@ cd ..
 
 if [ -f "$PYTHON_PATH/$PYTHON_FILE" ]; then 
     echo Running python script from $PYTHON_PATH...
-    python3 $PYTHON_PATH/$PYTHON_FILE --config $JSON_PATH
+    python3 $PYTHON_PATH/$PYTHON_FILE --config $JSON_PATH --mode "Test"
 
 else 
     echo "Python script not found!"
