@@ -28,12 +28,12 @@
         "output_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/aggregated_npz/removed_aggregated_train"
     },
     "dataset_train_load_paths": {
-        "X_path":"/home/slurm/pesgradivn/lcap/ids-online/Deep_Q_Learning_Auto_IDS/aggregated_npz/X_test_TOW_IDS_dataset_one_class_Entropy.npz",
-        "y_path": "/home/slurm/pesgradivn/lcap/ids-online/Deep_Q_Learning_Auto_IDS/aggregated_npz/Y_train_TOW_IDS_dataset_one_class_Entropy.npz" 
+        "X_path":"/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/aggregated_npz/X_train_TOW_IDS_dataset_one_class_Entropy.npz",
+        "y_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/aggregated_npz/Y_train_TOW_IDS_dataset_one_class_Entropy.npz" 
     },
     "dataset_test_load_paths": {
-        "X_path": "/home/slurm/pesgradivn/lcap/ids-online/Deep_Q_Learning_Auto_IDS/aggregated_npz/X_test_TOW_IDS_dataset_one_class_Entropy.npz",
-        "y_path": "/home/slurm/pesgradivn/lcap/ids-online/Deep_Q_Learning_Auto_IDS/aggregated_npz/Y_test_TOW_IDS_dataset_one_class_Entropy.npz"
+        "X_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/aggregated_npz/X_test_TOW_IDS_dataset_one_class_Entropy.npz",
+        "y_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/aggregated_npz/Y_test_TOW_IDS_dataset_one_class_Entropy.npz"
     },
     "config_model": {
         "algorithm": "DQL",
