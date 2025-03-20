@@ -48,5 +48,7 @@ def main():
         
         dql.test_model()
         
+        dql.save_metric(config)
+        
 if __name__ == "__main__":
     main()

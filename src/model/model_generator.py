@@ -118,7 +118,7 @@ class DQLModelGenerator():
         filename=LOG_FILE_PATH,  
         filemode='a',         
         format='%(asctime)s - %(levelname)s - %(message)s', 
-        level=logging.INFO)   
+        level=logging.INFO)
         self.q_network = self.__build_network()
         self._target_q_network = copy.deepcopy(self.q_network).eval()
         self._start_time = 0
@@ -261,5 +261,9 @@ class DQLModelGenerator():
                             ELAPSED_TIME: {elapsed_time} Seconds
                             TIME_PER_SAMPLE: {elapsed_time/len(self._environment_test._env_labels)} Seconds
                             | GENERAL ACCURACY {self._c_report['accuracy']} | PRECISION NORMAL {self._c_report['0']['precision']} | RECALL NORMAL {self._c_report['0']['recall']} | F1-SCORE NORMAL {self._c_report['0']['f1-score']} | PRECISION ANOMALY {self._c_report['1']['precision']} | RECALL ANOMALY {self._c_report['1']['recall']} | F1-SCORE ANOMALY {self._c_report['1']['f1-score']} |"""
-                            
+        
+        self._logger.info(log)
+        
+        log = self._confusion_matrix
+        
         self._logger.info(log)
