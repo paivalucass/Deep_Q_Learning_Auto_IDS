@@ -227,7 +227,7 @@ class DQLModelGenerator():
         self._end_time = time.time()
 
         print("Classification Report:")
-        self._c_report = classification_report(y_true, y_pred, target_names=["Intrusion", "Normal"])
+        self._c_report = classification_report(y_true, y_pred, target_names=["Intrusion", "Normal"], output_dict=True)
         print(self._c_report)
         
         print("\nConfusion Matrix:")
@@ -260,7 +260,7 @@ class DQLModelGenerator():
                             POLICY_TEST: {model_config["policy_test"]}
                             ELAPSED_TIME: {elapsed_time} Seconds
                             TIME_PER_SAMPLE: {elapsed_time/len(self._environment_test._env_labels)} Seconds
-                            | GENERAL ACCURACY {self._c_report['accuracy']} | PRECISION NORMAL {self._c_report['0']['precision']} | RECALL NORMAL {self._c_report['0']['recall']} | F1-SCORE NORMAL {self._c_report['0']['f1-score']} | PRECISION ANOMALY {self._c_report['1']['precision']} | RECALL ANOMALY {self._c_report['1']['recall']} | F1-SCORE ANOMALY {self._c_report['1']['f1-score']} |"""
+                            | GENERAL ACCURACY {self._c_report['accuracy']} | PRECISION NORMAL {self._c_report['Normal']['precision']} | RECALL NORMAL {self._c_report['Normal']['recall']} | F1-SCORE NORMAL {self._c_report['Normal']['f1-score']} | PRECISION ANOMALY {self._c_report['Intrusion']['precision']} | RECALL ANOMALY {self._c_report['Intrusion']['recall']} | F1-SCORE ANOMALY {self._c_report['Intrusion']['f1-score']} |"""
         
         self._logger.info(log)
         
