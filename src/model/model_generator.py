@@ -63,8 +63,8 @@ class Environment():
             labels_array = labels_array[138000:230000]
         
         else:
-            features_array = features_array[154000:245000]
-            labels_array = labels_array[154000:245000]
+            features_array = features_array[156000:245000]
+            labels_array = labels_array[156000:245000]
         
         print(f"Built dataset with shape: {features_array.shape}")
         
@@ -266,4 +266,4 @@ class DQLModelGenerator():
         
         log = self._confusion_matrix
         
-        self._logger.info(log)
+        self._logger.info(log):Q
