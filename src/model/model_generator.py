@@ -63,8 +63,8 @@ class Environment():
             labels_array = labels_array[138000:230000]
         
         else:
-            features_array = features_array[156000:245000]
-            labels_array = labels_array[156000:245000]
+            features_array = features_array[156000:240000]
+            labels_array = labels_array[156000:240000]
         
         print(f"Built dataset with shape: {features_array.shape}")
         
