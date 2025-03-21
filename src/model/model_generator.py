@@ -266,4 +266,4 @@ class DQLModelGenerator():
         
         log = self._confusion_matrix
         
-        self._logger.info(log):Q
+        self._logger.info(log)
