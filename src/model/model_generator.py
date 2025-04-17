@@ -202,7 +202,7 @@ class DQLModelGenerator():
                         recent_losses.pop(0)
                         std_dev = statistics.stdev(recent_losses)
                         if std_dev < std_threshold:
-                            self.get_logger().info(f"Stopping early at episode {episode}: loss not changing (std={std_dev:.6f})")
+                            print(f"Stopping early at episode {episode}: loss not changing (std={std_dev:.6f})")
                             return stats
 
                 state = next_state
