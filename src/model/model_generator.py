@@ -47,6 +47,7 @@ class Environment():
     def __init__(self, config: typing.Dict, dataset: typing.Dict):
         self._env_index = 0
         self._env, self._env_labels = self.__build_dataset(dataset)
+        print(self._env[0])
         self._positive_reward = config["config_model"]["positive_reward"]
         self._negative_reward = config["config_model"]["negative_reward"]
 
@@ -126,7 +127,9 @@ class DQLModelGenerator():
             
     def __build_network(self):
         return nn.Sequential(
-            nn.Linear(self._state_size, 128),
+            nn.Linear(self._state_size, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
             nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
@@ -198,18 +201,21 @@ class DQLModelGenerator():
                     recent_losses.append(loss_val)
 
                     # Check loss stability over last 100 steps
-                    if len(recent_losses) > loss_window_size:
-                        recent_losses.pop(0)
+                    if len(recent_losses) >= loss_window_size and episode > 5:  # Require minimum episodes
                         std_dev = statistics.stdev(recent_losses)
                         if std_dev < std_threshold:
                             print(f"Stopping early at episode {episode}: loss not changing (std={std_dev:.6f})")
                             return stats
+                        recent_losses.pop(0)
 
                 state = next_state
                 ep_return += reward.item()
 
             stats["Returns"].append(ep_return)
 
+            # Decay epsilon
+            self._epsilon = max(self._epsilon_min, self._epsilon * 0.995)
+            
             if episode % 10 == 0:
                 self._target_q_network.load_state_dict(self.q_network.state_dict())
 
