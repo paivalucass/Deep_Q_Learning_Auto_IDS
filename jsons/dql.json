@@ -47,7 +47,7 @@
         "epsilon": 0.1,
         "epsilon_min": 0.01,
         "memory_size": 10000,
-        "n_episodes_train": 1000,
+        "n_episodes_train": 500,
         "n_episodes_test": 1000,
         "n_steps": 1000,
         "positive_reward": 1,

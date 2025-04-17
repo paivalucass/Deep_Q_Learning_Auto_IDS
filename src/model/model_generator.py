@@ -6,6 +6,7 @@ import copy
 import time
 import random
 import logging
+import statistics
 import torch.nn.functional as F
 from torch import nn as nn
 from torch.optim import AdamW
@@ -58,13 +59,10 @@ class Environment():
         labels_array = labels_array.f.arr_0
         
         if len(features_array) > 1000000:
-            #num_samples = min(138000, )  
-            features_array = features_array[138000:230000]
-            labels_array = labels_array[138000:230000]
+            pass
         
         else:
-            features_array = features_array[156000:240000]
-            labels_array = labels_array[156000:240000]
+            pass
         
         print(f"Built dataset with shape: {features_array.shape}")
         
@@ -148,17 +146,17 @@ class DQLModelGenerator():
         
     def _deep_q_learning(self):
         """ Initialize Neural Network Optimizer """
-        
+
         optim = AdamW(self.q_network.parameters(), lr=self._alpha)
         stats = {'MSE Loss': [], 'Returns': []}
 
-        """ Episode Loop
-        
-        Every episode is a run over the whole dataset. (while not done) """
-        
+        # For loss plateau detection
+        recent_losses = []
+        loss_window_size = 100
+        std_threshold = 1e-4  
+
         for episode in tqdm(range(1, self._n_episodes_train + 1)):
-                        
-            # Reset the environment every time it starts a new episode 
+            
             state = self._environment_train.reset_env()
             done = False
             ep_return = 0
@@ -195,13 +193,23 @@ class DQLModelGenerator():
                     # Update the neural network weights and biases
                     optim.step()
 
-                    stats['MSE Loss'].append(loss.item())
-                    
+                    loss_val = loss.item()
+                    stats['MSE Loss'].append(loss_val)
+                    recent_losses.append(loss_val)
+
+                    # Check loss stability over last 100 steps
+                    if len(recent_losses) > loss_window_size:
+                        recent_losses.pop(0)
+                        std_dev = statistics.stdev(recent_losses)
+                        if std_dev < std_threshold:
+                            self.get_logger().info(f"Stopping early at episode {episode}: loss not changing (std={std_dev:.6f})")
+                            return stats
+
                 state = next_state
                 ep_return += reward.item()
-                
+
             stats["Returns"].append(ep_return)
-            
+
             if episode % 10 == 0:
                 self._target_q_network.load_state_dict(self.q_network.state_dict())
 
