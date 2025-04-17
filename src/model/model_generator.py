@@ -47,7 +47,6 @@ class Environment():
     def __init__(self, config: typing.Dict, dataset: typing.Dict):
         self._env_index = 0
         self._env, self._env_labels = self.__build_dataset(dataset)
-        print(self._env[0])
         self._positive_reward = config["config_model"]["positive_reward"]
         self._negative_reward = config["config_model"]["negative_reward"]
 
@@ -126,15 +125,17 @@ class DQLModelGenerator():
         self._confusion_matrix = None
             
     def __build_network(self):
-        return nn.Sequential(
-            nn.Linear(self._state_size, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Linear(128, 64),
-            nn.ReLU(),
-            nn.Linear(64, NUM_ACTIONS)
-        )
+    return nn.Sequential(
+        nn.Linear(self._state_size, 128),
+        nn.BatchNorm1d(128),  # Normalize activations
+        nn.ReLU(),
+        nn.Dropout(0.3),  # Regularization
+        nn.Linear(128, 64),
+        nn.BatchNorm1d(64),
+        nn.ReLU(),
+        nn.Dropout(0.2),        
+        nn.Linear(64, NUM_ACTIONS)
+    )
     
     def __policy(self, state):
         if torch.rand(1) < self._epsilon:

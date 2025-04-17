@@ -29,8 +29,8 @@ def main():
         # Load model    
         dql = model_generator.DQLModelGenerator(config, features_names)
         
-        # stats = dql._deep_q_learning()
-        # q_network = dql.q_network
+        stats = dql._deep_q_learning()
+        q_network = dql.q_network
         
         with open("/home/slurm/pesgradivn/lcap/ids-online/Deep_Q_Learning_Auto_IDS/trained_models/dql_all_labels.pkl", "wb") as file:
             pickle.dump(q_network, file)
