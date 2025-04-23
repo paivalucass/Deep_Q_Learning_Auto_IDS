@@ -69,15 +69,16 @@ class Environment():
         return features_array, labels_array
     
     def __compute_reward(self, action):
+        true_label = self._env_labels[self._env_index]
         
-        if action == 1 and self._env_labels[self._env_index] == 1:
+        if action == true_label:
             return self._positive_reward
         
-        elif action == 0 and self._env_labels[self._env_index] == 0:
-            return self._positive_reward
-        
-        else:
+        elif action == 1 and true_label == 0:  # FP
             return self._negative_reward
+    
+        else:  # FN 
+            return self._negative_reward * 2  # Higher penalty
         
     def reset_env(self):
         self._env_index = 0
@@ -199,10 +200,7 @@ class DQLModelGenerator():
 
                     loss_val = loss.item()
                     stats['MSE Loss'].append(loss_val)
-                    recent_losses.append(loss_val)
-
-                    if len(recent_losses) >= loss_window_size:
-                        return stats
+                    # recent_losses.append(loss_val)
                         
                     # Check loss stability over last 100 steps
                     # if len(recent_losses) >= loss_window_size and episode > 5:  # Require minimum episodes

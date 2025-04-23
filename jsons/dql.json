@@ -50,8 +50,8 @@
         "n_episodes_train": 50,
         "n_episodes_test": 1000,
         "n_steps": 1000,
-        "positive_reward": 100,
-        "negative_reward": -100,
+        "positive_reward": 1,
+        "negative_reward": -1,
         "replay_capacity": 100000,
         "metric": ["Accuracy", "Recall", "F1_Score", "Precision", "ConfusionMatrix"] 
     }
