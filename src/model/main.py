@@ -32,10 +32,10 @@ def main():
         stats = dql._deep_q_learning()
         q_network = dql.q_network
         
-        with open("/home/slurm/pesgradivn/lcap/ids-online/Deep_Q_Learning_Auto_IDS/trained_models/dql_all_labels.pkl", "wb") as file:
+        with open("/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/dql_all_labels.pkl", "wb") as file:
             pickle.dump(q_network, file)
             
-        with open("/home/slurm/pesgradivn/lcap/ids-online/Deep_Q_Learning_Auto_IDS/trained_models/stats_all_labels.pkl", "wb") as file:
+        with open("/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/stats_all_labels.pkl", "wb") as file:
             pickle.dump(stats, file)
                     
         dql.test_model()
@@ -43,7 +43,7 @@ def main():
         dql = model_generator.DQLModelGenerator(config, features_names)
         stats = None
         
-        with open("/home/slurm/pesgradivn/lcap/ids-online/Deep_Q_Learning_Auto_IDS/trained_models/dql_2.pkl", "rb") as file:
+        with open("/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/dql_all_labels.pkl", "rb") as file:
             dql.q_network = pickle.load(file)
         
         dql.test_model()
