@@ -37,9 +37,7 @@ def main():
             
         with open("/home/slurm/pesgradivn/lcap/ids-online/Deep_Q_Learning_Auto_IDS/trained_models/stats_all_labels.pkl", "wb") as file:
             pickle.dump(stats, file)
-            
-        print("OI")
-        
+                    
         dql.test_model()
     else:
         dql = model_generator.DQLModelGenerator(config, features_names)

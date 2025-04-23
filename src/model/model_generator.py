@@ -58,11 +58,11 @@ class Environment():
         labels_array = np.load(paths_dictionary["y_path"])
         labels_array = labels_array.f.arr_0
         
-        if len(features_array) > 1000000:
-            pass
+        # if len(features_array) > 1000000:
+        #     pass
         
-        else:
-            pass
+        # else:
+        #     pass
         
         print(f"Built dataset with shape: {features_array.shape}")
         
@@ -125,17 +125,17 @@ class DQLModelGenerator():
         self._confusion_matrix = None
             
     def __build_network(self):
-    return nn.Sequential(
-        nn.Linear(self._state_size, 128),
-        nn.BatchNorm1d(128),  # Normalize activations
-        nn.ReLU(),
-        nn.Dropout(0.3),  # Regularization
-        nn.Linear(128, 64),
-        nn.BatchNorm1d(64),
-        nn.ReLU(),
-        nn.Dropout(0.2),        
-        nn.Linear(64, NUM_ACTIONS)
-    )
+        return nn.Sequential(
+            nn.Linear(self._state_size, 128),
+            nn.LayerNorm(128), 
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(128, 64),
+            nn.LayerNorm(64),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(64, NUM_ACTIONS)
+        )
     
     def __policy(self, state):
         if torch.rand(1) < self._epsilon:
@@ -199,15 +199,15 @@ class DQLModelGenerator():
 
                     loss_val = loss.item()
                     stats['MSE Loss'].append(loss_val)
-                    recent_losses.append(loss_val)
+                    # recent_losses.append(loss_val)
 
                     # Check loss stability over last 100 steps
-                    if len(recent_losses) >= loss_window_size and episode > 5:  # Require minimum episodes
-                        std_dev = statistics.stdev(recent_losses)
-                        if std_dev < std_threshold:
-                            print(f"Stopping early at episode {episode}: loss not changing (std={std_dev:.6f})")
-                            return stats
-                        recent_losses.pop(0)
+                    # if len(recent_losses) >= loss_window_size and episode > 5:  # Require minimum episodes
+                    #     std_dev = statistics.stdev(recent_losses)
+                    #     if std_dev < std_threshold:
+                    #         print(f"Stopping early at episode {episode}: loss not changing (std={std_dev:.6f})")
+                    #         return stats
+                    #     recent_losses.pop(0)
 
                 state = next_state
                 ep_return += reward.item()
