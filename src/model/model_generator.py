@@ -199,8 +199,11 @@ class DQLModelGenerator():
 
                     loss_val = loss.item()
                     stats['MSE Loss'].append(loss_val)
-                    # recent_losses.append(loss_val)
+                    recent_losses.append(loss_val)
 
+                    if len(recent_losses) >= loss_window_size:
+                        return stats
+                        
                     # Check loss stability over last 100 steps
                     # if len(recent_losses) >= loss_window_size and episode > 5:  # Require minimum episodes
                     #     std_dev = statistics.stdev(recent_losses)
