@@ -18,17 +18,17 @@ LOG_FILE_PATH = "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/output/met
 
 class ReplayMemory():
     def __init__(self, config: typing.Dict):
-        self.capacity = config["config_model"]["replay_capacity"]
+        self._capacity = config["config_model"]["replay_capacity"]
         self._batch_size = config["config_model"]["batch_size"]
         self.memory = []
         self.position = 0
     
     def insert(self, transition):
-        if len(self.memory) < self.capacity:
+        if len(self.memory) < self._capacity:
             self.memory.append(None)
         
         self.memory[self.position] = transition
-        self.position = (self.position + 1) % self.capacity
+        self.position = (self.position + 1) % self._capacity # TODO: Does this reset affect the transitions??
         
     def sample(self): # Modifed the sampling from random to sequential
         assert self.can_sample()
@@ -44,11 +44,19 @@ class ReplayMemory():
         return len(self.memory)
 
 class Environment():
-    def __init__(self, config: typing.Dict, dataset: typing.Dict):
+    def __init__(self, config: typing.Dict, dataset: typing.Dict, dataset_type = "train"):
         self._env_index = 0
-        self._env, self._env_labels = self.__build_dataset(dataset)
         self._positive_reward = config["config_model"]["positive_reward"]
         self._negative_reward = config["config_model"]["negative_reward"]
+        self._start_train = config["config_model"]["start_dataset_train"]
+        self._end_train = config["config_model"]["end_dataset_train"]
+        self._start_test = config["config_model"]["start_dataset_test"]
+        self._end_test = config["config_model"]["end_dataset_test"]
+        self._max_steps = config["config_model"].get("n_steps", 10000)
+        self._dataset_type = dataset_type
+        self._env_data, self._env_labels = self.__build_dataset(dataset)
+        self._start_index = 0
+        self._env_index = 0
 
     def __build_dataset(self, paths_dictionary: typing.Dict):
         
@@ -58,42 +66,47 @@ class Environment():
         labels_array = np.load(paths_dictionary["y_path"])
         labels_array = labels_array.f.arr_0
         
-        # if len(features_array) > 1000000:
-        #     pass
+        if self._dataset_type == "train":
+            features_array = features_array[self._start_train:self._end_train]
+            labels_array = labels_array[self._start_train:self._end_train]
         
-        # else:
-        #     pass
+        features_array = features_array[self._start_test:self._end_test]
+        labels_array = labels_array[self._start_test:self._end_test]
         
         print(f"Built dataset with shape: {features_array.shape}")
         
         return features_array, labels_array
     
-    def __compute_reward(self, action):
-        true_label = self._env_labels[self._env_index]
-        
-        if action == true_label:
-            return self._positive_reward
-        
-        elif action == 1 and true_label == 0:  # FP
-            return self._negative_reward
-    
-        else:  # FN 
-            return self._negative_reward * 2  # Higher penalty
-        
     def reset_env(self):
+        max_start = len(self._env_data) - self._max_steps - 1
+        self._start_index = random.randint(0, max_start)
         self._env_index = 0
-        return torch.from_numpy(self._env[0]).unsqueeze(dim=0).float()
-        
+        self._step_counter = 0
+        state = self._env_data[self._start_index]
+        return torch.from_numpy(state).unsqueeze(dim=0).float()
+
     def step_env(self, action):
-        done = 0
         action = action.item()
-        reward = torch.tensor(self.__compute_reward(action)).view(1, -1).float()
+        true_idx = self._start_index + self._env_index
+        reward = torch.tensor(self.__compute_reward(action, true_idx)).view(1, -1).float()
+        
         self._env_index += 1
-        next_state = torch.from_numpy(self._env[self._env_index]).unsqueeze(dim=0).float()
-        if self._env_index == self._env.shape[0] - 1:
-            done = 1
-        done = torch.tensor(done).view(1, -1)
-        return next_state, reward, done    
+        self._step_counter += 1
+        done = self._env_index >= self._max_steps
+
+        next_idx = self._start_index + self._env_index
+        next_state = torch.from_numpy(self._env_data[next_idx]).unsqueeze(dim=0).float()
+
+        return next_state, reward, torch.tensor(done).view(1, -1)
+
+    def __compute_reward(self, action, true_idx):
+        true_label = self._env_labels[true_idx]
+        if action == 1 and true_label == 1:
+            return self._positive_reward
+        elif action == 0 and true_label == 0:
+            return 0
+        else:
+            return self._negative_reward
 
 class DQLModelGenerator():
     def __init__(self, config: typing.Dict, features_names):
@@ -110,8 +123,8 @@ class DQLModelGenerator():
         self._n_episodes_test = config["config_model"]["n_episodes_test"]
         self._n_steps = config["config_model"]["n_steps"]
         self._replay_memory = ReplayMemory(config)
-        self._environment_train = Environment(config, config["dataset_train_load_paths"])
-        self._environment_test = Environment(config, config["dataset_test_load_paths"])
+        self._environment_train = Environment(config, config["dataset_train_load_paths"], "train")
+        self._environment_test = Environment(config, config["dataset_test_load_paths"], "test")
         self._logger = logging.getLogger(__name__)
         logging.basicConfig(
         filename=LOG_FILE_PATH,  
@@ -124,41 +137,35 @@ class DQLModelGenerator():
         self._end_time = 0
         self._c_report = None
         self._confusion_matrix = None
-            
+    
     def __build_network(self):
         return nn.Sequential(
-            nn.Linear(self._state_size, 128),
-            nn.LayerNorm(128), 
+            nn.Linear(self._state_size, 256),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            nn.Linear(256, 128),
+            nn.ReLU(),
             nn.Linear(128, 64),
-            nn.LayerNorm(64),
             nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(64, NUM_ACTIONS)
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, NUM_ACTIONS)
         )
     
     def __policy(self, state):
         if torch.rand(1) < self._epsilon:
             return torch.randint(NUM_ACTIONS, (1,1))
-        else:
-            av = self.q_network(state).detach()
-            return torch.argmax(av, dim = 1, keepdim=True)
+        av = self.q_network(state).detach()
+        return torch.argmax(av, dim = 1, keepdim=True)
     
     def __policy_test(self, state):
         av = self.q_network(state).detach()
         return torch.argmax(av, dim = 1, keepdim=True)
         
-    def _deep_q_learning(self):
+    def deep_q_learning(self):
         """ Initialize Neural Network Optimizer """
 
         optim = AdamW(self.q_network.parameters(), lr=self._alpha)
         stats = {'MSE Loss': [], 'Returns': []}
-
-        # For loss plateau detection
-        recent_losses = []
-        loss_window_size = 100
-        std_threshold = 1e-4  
 
         for episode in tqdm(range(1, self._n_episodes_train + 1)):
             
@@ -200,23 +207,11 @@ class DQLModelGenerator():
 
                     loss_val = loss.item()
                     stats['MSE Loss'].append(loss_val)
-                    # recent_losses.append(loss_val)
-                        
-                    # Check loss stability over last 100 steps
-                    # if len(recent_losses) >= loss_window_size and episode > 5:  # Require minimum episodes
-                    #     std_dev = statistics.stdev(recent_losses)
-                    #     if std_dev < std_threshold:
-                    #         print(f"Stopping early at episode {episode}: loss not changing (std={std_dev:.6f})")
-                    #         return stats
-                    #     recent_losses.pop(0)
 
                 state = next_state
                 ep_return += reward.item()
 
             stats["Returns"].append(ep_return)
-
-            # Decay epsilon
-            self._epsilon = max(self._epsilon_min, self._epsilon * 0.995)
             
             if episode % 10 == 0:
                 self._target_q_network.load_state_dict(self.q_network.state_dict())

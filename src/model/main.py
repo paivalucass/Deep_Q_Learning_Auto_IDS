@@ -1,10 +1,8 @@
 import model_generator
-import time
 import json
 import argparse
-import pickle
+import torch
 import matplotlib.pyplot as plt
-
 
 def main():
     parser = argparse.ArgumentParser(description='Execute feature generation step')
@@ -22,29 +20,21 @@ def main():
         print(f"parse_args: Error decoding JSON: {e}")
     
     features_names = []
-    for i in range(config["config_model"]["feature_size"]):
-        features_names.append(f"feat_{i}")
+    features_names.extend(
++        f"feat_{i}" for i in range(config["config_model"]["feature_size"]))
         
     if args.mode == "Train":
-        # Load model    
         dql = model_generator.DQLModelGenerator(config, features_names)
         
-        stats = dql._deep_q_learning()
-        q_network = dql.q_network
+        dql.deep_q_learning()
         
-        with open("/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/dql_all_labels.pkl", "wb") as file:
-            pickle.dump(q_network, file)
-            
-        with open("/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/stats_all_labels.pkl", "wb") as file:
-            pickle.dump(stats, file)
+        torch.save(dql.q_network.state_dict(), f"{config["config_model"]["save_path"]}.pth")
                     
         dql.test_model()
     else:
         dql = model_generator.DQLModelGenerator(config, features_names)
-        stats = None
         
-        with open("/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/dql_2.pkl", "rb") as file:
-            dql.q_network = pickle.load(file)
+        dql.q_network.load_state_dict(torch.load(f"{config["config_model"]["save_path"]}.pth"))
         
         dql.test_model()
         

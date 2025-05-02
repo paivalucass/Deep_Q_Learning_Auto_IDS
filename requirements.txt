@@ -6,3 +6,4 @@ scapy
 torch
 tdqm
 matplotlib
+wandb
