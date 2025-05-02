@@ -13,7 +13,6 @@ if [ -d "$VENV_DIR" ]; then
 else
     python3 -m venv $VENV_DIR
     echo "$VENV_DIR virtual environment not found, creating one..."
-
 fi
 # Check if requirements.txt exists
 if [ -f "requirements.txt" ]; then

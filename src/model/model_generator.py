@@ -71,8 +71,9 @@ class Environment():
             features_array = features_array[self._start_train:self._end_train]
             labels_array = labels_array[self._start_train:self._end_train]
         
-        features_array = features_array[self._start_test:self._end_test]
-        labels_array = labels_array[self._start_test:self._end_test]
+        else:
+            features_array = features_array[self._start_test:self._end_test]
+            labels_array = labels_array[self._start_test:self._end_test]
         
         print(f"Built dataset with shape: {features_array.shape}")
         
