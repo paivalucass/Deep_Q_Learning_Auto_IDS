@@ -12,6 +12,7 @@ from torch import nn as nn
 from torch.optim import AdamW
 from sklearn.metrics import classification_report, confusion_matrix
 from tqdm import tqdm
+import wandb
 
 NUM_ACTIONS = 2
 LOG_FILE_PATH = "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/output/metrics.log"
@@ -132,6 +133,7 @@ class DQLModelGenerator():
         format='%(asctime)s - %(levelname)s - %(message)s', 
         level=logging.INFO)
         self.q_network = self.__build_network()
+        self._checkpoint_path = config["config_model"]["save_path"]
         self._target_q_network = copy.deepcopy(self.q_network).eval()
         self._start_time = 0
         self._end_time = 0
@@ -215,6 +217,11 @@ class DQLModelGenerator():
             
             if episode % 10 == 0:
                 self._target_q_network.load_state_dict(self.q_network.state_dict())
+            
+            if episode % 100 == 0:
+                checkpoint_path = f"{self._checkpoint_path}_ep{episode}.pth"
+                torch.save(self.q_network.state_dict(), checkpoint_path)
+                wandb.save(checkpoint_path)
 
         return stats        
     

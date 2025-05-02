@@ -58,6 +58,7 @@
         "start_dataset_test": 0,
         "end_dataset_test": 790000,
         "metric": ["Accuracy", "Recall", "F1_Score", "Precision", "ConfusionMatrix"],
-        "save_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/dql_all_labels"
+        "save_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/dql_all_labels",
+        "wandb_project": "DQN Research IDS"
     }
 }
