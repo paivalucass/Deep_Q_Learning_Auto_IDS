@@ -94,7 +94,7 @@ class Environment():
         
         self._env_index += 1
         self._step_counter += 1
-        done = self._env_index >= self._max_steps
+        done = 1 if self._env_index >= self._max_steps else 0
 
         next_idx = self._start_index + self._env_index
         next_state = torch.from_numpy(self._env_data[next_idx]).unsqueeze(dim=0).float()
