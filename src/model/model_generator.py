@@ -110,8 +110,8 @@ class Environment():
         action = action.item()
         reward = torch.tensor(self.__compute_reward(action, self._env_index)).view(1, -1).float()
         self._env_index += 1
-        next_state = torch.from_numpy(self._env[self._env_index]).unsqueeze(dim=0).float()
-        done = 1 if self._env_index == self._env.shape[0] - 1 else 0
+        next_state = torch.from_numpy(self._env_data[self._env_index]).unsqueeze(dim=0).float()
+        done = 1 if self._env_index == self._env_data.shape[0] - 1 else 0
         done = torch.tensor(done).view(1, -1)
         return next_state, reward, done  
         
