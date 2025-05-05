@@ -31,7 +31,7 @@ echo "$PYTHON_PATH/$PYTHON_FILE"
 if [ -f "$PYTHON_PATH/$PYTHON_FILE" ]; then 
     echo Running python script from $PYTHON_PATH...
     wandb login 605eb43377cc5aaffee00fb1274304e3ecccf0e7
-    python3 $PYTHON_PATH/$PYTHON_FILE --config $JSON_PATH --mode "Train"
+    python3 $PYTHON_PATH/$PYTHON_FILE --config $JSON_PATH --mode "Test"
 
 else 
     echo "Python script not found!"

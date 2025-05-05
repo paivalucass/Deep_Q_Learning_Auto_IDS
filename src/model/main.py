@@ -25,7 +25,7 @@ def main():
     # Initialize wandb
     wandb.init(
         project=config["config_model"].get("wandb_project", "DQL-IDS"),
-        name=config["config_model"].get("wandb_run_name", "run"),
+        name=config["config_model"].get("wandb_run_name", f"{args.mode}_DQN"),
         config=config["config_model"]
     )
 

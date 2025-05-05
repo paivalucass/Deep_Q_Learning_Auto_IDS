@@ -86,6 +86,11 @@ class Environment():
         self._step_counter = 0
         state = self._env_data[self._start_index]
         return torch.from_numpy(state).unsqueeze(dim=0).float()
+    
+    def reset_env_test(self):
+        self._env_index = 0
+        state = self._env_data[0]
+        return torch.from_numpy(state).unsqueeze(dim=0).float()
 
     def step_env(self, action):
         action = action.item()
@@ -100,13 +105,22 @@ class Environment():
         next_state = torch.from_numpy(self._env_data[next_idx]).unsqueeze(dim=0).float()
 
         return next_state, reward, torch.tensor(done).view(1, -1)
-
+    
+    def step_env_test(self, action):
+        action = action.item()
+        reward = torch.tensor(self.__compute_reward(action, self._env_index)).view(1, -1).float()
+        self._env_index += 1
+        next_state = torch.from_numpy(self._env[self._env_index]).unsqueeze(dim=0).float()
+        done = 1 if self._env_index == self._env.shape[0] - 1 else 0
+        done = torch.tensor(done).view(1, -1)
+        return next_state, reward, done  
+        
     def __compute_reward(self, action, true_idx):
         true_label = self._env_labels[true_idx]
         if action == 1 and true_label == 1:
             return self._positive_reward
         elif action == 0 and true_label == 0:
-            return 0
+            return self._positive_reward 
         else:
             return self._negative_reward
 
@@ -230,7 +244,7 @@ class DQLModelGenerator():
         y_true = []
         y_pred = []
 
-        state = self._environment_test.reset_env() 
+        state = self._environment_test.reset_env_test() 
         done = False
         
         self._start_time = time.time()
@@ -240,7 +254,7 @@ class DQLModelGenerator():
             
             y_true.append(self._environment_test._env_labels[self._environment_test._env_index])  
             y_pred.append(action.item())
-            next_state, reward, done = self._environment_test.step_env(action)
+            next_state, reward, done = self._environment_test.step_env_test(action)
             state = next_state
             
         self._end_time = time.time()
