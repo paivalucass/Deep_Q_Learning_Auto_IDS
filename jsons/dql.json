@@ -47,9 +47,9 @@
         "epsilon": 0.1,
         "epsilon_min": 0.01,
         "memory_size": 10000,
-        "n_episodes_train": 10000,
+        "n_episodes_train": 500,
         "n_episodes_test": 1000,
-        "n_steps": 1000,
+        "n_steps": 10000,
         "positive_reward": 1,
         "negative_reward": -1,
         "replay_capacity": 100000,
@@ -58,7 +58,7 @@
         "start_dataset_test": 140000,
         "end_dataset_test": 250000,
         "metric": ["Accuracy", "Recall", "F1_Score", "Precision", "ConfusionMatrix"],
-        "save_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/dql_all_labels",
+        "save_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/DQN_c_d",
         "wandb_project": "DQN Research IDS"
     }
 }
