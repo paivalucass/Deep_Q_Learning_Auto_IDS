@@ -4,6 +4,7 @@ import argparse
 import torch
 import matplotlib.pyplot as plt
 import wandb
+import datetime
 
 def main():
     parser = argparse.ArgumentParser(description='Execute feature generation step')
@@ -22,10 +23,12 @@ def main():
         print(f"parse_args: Error decoding JSON: {e}")
         return
     
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    
     # Initialize wandb
     wandb.init(
         project=config["config_model"].get("wandb_project", "DQL-IDS"),
-        name=config["config_model"].get("wandb_run_name", f"{args.mode}_DQN"),
+        name=config["config_model"].get("wandb_run_name", f"{args.mode}_DQN_{timestamp}"),
         config=config["config_model"]
     )
 
