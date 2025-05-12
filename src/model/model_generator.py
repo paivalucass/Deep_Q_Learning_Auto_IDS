@@ -234,7 +234,7 @@ class DQLModelGenerator():
                 self._target_q_network.load_state_dict(self.q_network.state_dict())
             
             # TODO: parametrize checkpoint
-            if episode % 1000 == 0:
+            if episode % 100 == 0:
                 checkpoint_path = f"{self._checkpoint_path}_ep{episode}.pth"
                 torch.save(self.q_network.state_dict(), checkpoint_path)
                 wandb.save(checkpoint_path)

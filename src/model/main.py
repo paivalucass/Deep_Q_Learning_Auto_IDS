@@ -49,6 +49,7 @@ def main():
 
     else:
         model_path = f"{config['config_model']['save_path']}.pth"
+        print(f"Loading model from: {model_path}")
         dql.q_network.load_state_dict(torch.load(model_path))
         dql.test_model()
         dql.save_metric(config)
