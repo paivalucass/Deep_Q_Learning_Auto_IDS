@@ -28,10 +28,14 @@ cd ..
 
 echo "$PYTHON_PATH/$PYTHON_FILE"
 
-echo "Train or Test?"
+process=$1
 
-read process
-echo -e "\nFase selecionada: $process"
+if [ -z "$process" ]; then
+    echo "Usage: $0 <Train|Test>"
+    exit 1
+fi
+
+echo -e "\nProcess Selected: $process"
 
 case $process in
     "Train"|"train")
