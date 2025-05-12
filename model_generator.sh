@@ -28,10 +28,28 @@ cd ..
 
 echo "$PYTHON_PATH/$PYTHON_FILE"
 
+echo "Train or Test?"
+
+read process
+echo -e "\nFase selecionada: $process"
+
+case $process in
+    "Train"|"train")
+        process_flag="Train"
+        ;;
+    "Test"|"test")
+        process_flag="Test"
+        ;;
+    *)
+        echo "Invalid Process."
+        exit 1
+        ;;
+esac
+
 if [ -f "$PYTHON_PATH/$PYTHON_FILE" ]; then 
     echo Running python script from $PYTHON_PATH...
     wandb login 605eb43377cc5aaffee00fb1274304e3ecccf0e7
-    python3 $PYTHON_PATH/$PYTHON_FILE --config $JSON_PATH --mode "Train"
+    python3 $PYTHON_PATH/$PYTHON_FILE --config $JSON_PATH --mode "$process_flag"
 
 else 
     echo "Python script not found!"
