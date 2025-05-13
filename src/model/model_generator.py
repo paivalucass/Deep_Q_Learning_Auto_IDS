@@ -53,10 +53,10 @@ class Environment():
         self._end_train = config["config_model"]["end_dataset_train"]
         self._start_test = config["config_model"]["start_dataset_test"]
         self._end_test = config["config_model"]["end_dataset_test"]
-        self._positive_intrusion_multiplier["config_model"]["positive_intrusion_multiplier"]
-        self._positive_normal_multiplier["config_model"]["positive_normal_multiplier"]
-        self._negative_intrusion_multiplier["config_model"]["negative_intrusion_multiplier"]
-        self._negative_normal_multiplier["config_model"]["negative_normal_multiplier"]
+        self._positive_intrusion_multiplier = config["config_model"]["positive_intrusion_multiplier"]
+        self._positive_normal_multiplier = config["config_model"]["positive_normal_multiplier"]
+        self._negative_intrusion_multiplier = config["config_model"]["negative_intrusion_multiplier"]
+        self._negative_normal_multiplier = config["config_model"]["negative_normal_multiplier"]
         self._max_steps = config["config_model"].get("n_steps", 10000)
         self._dataset_type = dataset_type
         self._env_data, self._env_labels = self.__build_dataset(dataset)
