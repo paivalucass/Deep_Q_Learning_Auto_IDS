@@ -58,10 +58,15 @@ class Environment():
         self._negative_intrusion_multiplier = config["config_model"]["negative_intrusion_multiplier"]
         self._negative_normal_multiplier = config["config_model"]["negative_normal_multiplier"]
         self._max_steps = config["config_model"].get("n_steps", 10000)
+        self._n_episodes_train = config["config_model"]["n_episodes_train"]
+        self._proportion_intrusion = config["config_model"]["proportion_intrusion"]
+        self._proportion_normal = 1 - self._proportion_intrusion
         self._dataset_type = dataset_type
         self._env_data, self._env_labels = self.__build_dataset(dataset)
         self._start_index = 0
         self._env_index = 0
+        self._intrusion_counter = 0
+        self._normal_counter = 0
 
     def __build_dataset(self, paths_dictionary: typing.Dict):
         
@@ -85,9 +90,35 @@ class Environment():
     
     def reset_env(self):
         max_start = len(self._env_data) - self._max_steps - 1
-        self._start_index = random.randint(0, max_start)
         self._env_index = 0
         self._step_counter = 0
+        
+        max_retries = 1000
+        retries = 0
+
+        while True:
+            self._start_index = random.randint(0, max_start)
+            window_labels = self._env_labels[self._start_index:self._start_index + self._max_steps - 1]
+            
+            if self._intrusion_counter >= (self._n_episodes_train * self._proportion_intrusion) and 1 in window_labels:
+                retries += 1
+                if retries >= max_retries:
+                    break
+                continue
+            
+            if self._normal_counter >= (self._n_episodes_train * self._proportion_normal) and 1 not in window_labels:
+                retries += 1
+                if retries >= max_retries:
+                    break
+                continue
+            
+            break  # Valid segment found
+
+        if 1 in window_labels:
+            self._intrusion_counter += 1
+        if 1 not in window_labels:
+            self._normal_counter += 1
+
         state = self._env_data[self._start_index]
         return torch.from_numpy(state).unsqueeze(dim=0).float()
     
