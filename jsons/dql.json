@@ -48,7 +48,7 @@
         "epsilon_min": 0.01,
         "memory_size": 10000,
         "n_episodes_train": 1000,
-        "n_episodes_test": 1000,
+        "n_episodes_test": 1,
         "n_steps": 10000,
         "positive_reward": 1,
         "negative_reward": -1,
@@ -57,8 +57,13 @@
         "end_dataset_train": 1200000,
         "start_dataset_test": 0,
         "end_dataset_test": 790000,
+        "proportion_intrusion": 0.6,
+        "positive_intrusion_multiplier": 1.2,
+        "positive_normal_multiplier": 1.0,
+        "negative_intrusion_multiplier": 1.2,
+        "negative_normal_multiplier": 1.0,
         "metric": ["Accuracy", "Recall", "F1_Score", "Precision", "ConfusionMatrix"],
-        "save_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/dql_all_labels",
+        "save_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/DQN_equal_rewards_all_labels_1-2_positive_new_balancing_1000_steps",
         "wandb_project": "DQN Research IDS"
     }
 }

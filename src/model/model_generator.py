@@ -53,11 +53,20 @@ class Environment():
         self._end_train = config["config_model"]["end_dataset_train"]
         self._start_test = config["config_model"]["start_dataset_test"]
         self._end_test = config["config_model"]["end_dataset_test"]
+        self._positive_intrusion_multiplier = config["config_model"]["positive_intrusion_multiplier"]
+        self._positive_normal_multiplier = config["config_model"]["positive_normal_multiplier"]
+        self._negative_intrusion_multiplier = config["config_model"]["negative_intrusion_multiplier"]
+        self._negative_normal_multiplier = config["config_model"]["negative_normal_multiplier"]
         self._max_steps = config["config_model"].get("n_steps", 10000)
+        self._n_episodes_train = config["config_model"]["n_episodes_train"]
+        self._proportion_intrusion = config["config_model"]["proportion_intrusion"]
+        self._proportion_normal = 1 - self._proportion_intrusion
         self._dataset_type = dataset_type
         self._env_data, self._env_labels = self.__build_dataset(dataset)
         self._start_index = 0
         self._env_index = 0
+        self._intrusion_counter = 0
+        self._normal_counter = 0
 
     def __build_dataset(self, paths_dictionary: typing.Dict):
         
@@ -71,8 +80,9 @@ class Environment():
             features_array = features_array[self._start_train:self._end_train]
             labels_array = labels_array[self._start_train:self._end_train]
         
-        features_array = features_array[self._start_test:self._end_test]
-        labels_array = labels_array[self._start_test:self._end_test]
+        else:
+            features_array = features_array[self._start_test:self._end_test]
+            labels_array = labels_array[self._start_test:self._end_test]
         
         print(f"Built dataset with shape: {features_array.shape}")
         
@@ -80,10 +90,41 @@ class Environment():
     
     def reset_env(self):
         max_start = len(self._env_data) - self._max_steps - 1
-        self._start_index = random.randint(0, max_start)
         self._env_index = 0
         self._step_counter = 0
+        
+        max_retries = 1000
+        retries = 0
+
+        while True:
+            self._start_index = random.randint(0, max_start)
+            window_labels = self._env_labels[self._start_index:self._start_index + self._max_steps - 1]
+            
+            if self._intrusion_counter >= (self._n_episodes_train * self._proportion_intrusion) and 1 in window_labels:
+                retries += 1
+                if retries >= max_retries:
+                    break
+                continue
+            
+            if self._normal_counter >= (self._n_episodes_train * self._proportion_normal) and 1 not in window_labels:
+                retries += 1
+                if retries >= max_retries:
+                    break
+                continue
+            
+            break  # Valid segment found
+
+        if 1 in window_labels:
+            self._intrusion_counter += 1
+        if 1 not in window_labels:
+            self._normal_counter += 1
+
         state = self._env_data[self._start_index]
+        return torch.from_numpy(state).unsqueeze(dim=0).float()
+    
+    def reset_env_test(self):
+        self._env_index = 0
+        state = self._env_data[0]
         return torch.from_numpy(state).unsqueeze(dim=0).float()
 
     def step_env(self, action):
@@ -93,21 +134,32 @@ class Environment():
         
         self._env_index += 1
         self._step_counter += 1
-        done = self._env_index >= self._max_steps
+        done = 1 if self._env_index >= self._max_steps else 0
 
         next_idx = self._start_index + self._env_index
         next_state = torch.from_numpy(self._env_data[next_idx]).unsqueeze(dim=0).float()
 
         return next_state, reward, torch.tensor(done).view(1, -1)
-
+    
+    def step_env_test(self, action):
+        action = action.item()
+        reward = torch.tensor(self.__compute_reward(action, self._env_index)).view(1, -1).float()
+        self._env_index += 1
+        next_state = torch.from_numpy(self._env_data[self._env_index]).unsqueeze(dim=0).float()
+        done = 1 if self._env_index == self._env_data.shape[0] - 1 else 0
+        done = torch.tensor(done).view(1, -1)
+        return next_state, reward, done  
+        
     def __compute_reward(self, action, true_idx):
         true_label = self._env_labels[true_idx]
         if action == 1 and true_label == 1:
-            return self._positive_reward
+            return self._positive_reward * self._positive_intrusion_multiplier
         elif action == 0 and true_label == 0:
-            return 0
-        else:
-            return self._negative_reward
+            return self._positive_reward * self._positive_normal_multiplier
+        elif action == 0 and true_label == 1:
+            return self._negative_reward * self._negative_intrusion_multiplier
+        elif action == 1 and true_label == 0:
+            return self._negative_reward * self._negative_normal_multiplier
 
 class DQLModelGenerator():
     def __init__(self, config: typing.Dict, features_names):
@@ -218,6 +270,7 @@ class DQLModelGenerator():
             if episode % 10 == 0:
                 self._target_q_network.load_state_dict(self.q_network.state_dict())
             
+            # TODO: parametrize checkpoint
             if episode % 100 == 0:
                 checkpoint_path = f"{self._checkpoint_path}_ep{episode}.pth"
                 torch.save(self.q_network.state_dict(), checkpoint_path)
@@ -230,7 +283,7 @@ class DQLModelGenerator():
         y_true = []
         y_pred = []
 
-        state = self._environment_test.reset_env() 
+        state = self._environment_test.reset_env_test() 
         done = False
         
         self._start_time = time.time()
@@ -240,7 +293,7 @@ class DQLModelGenerator():
             
             y_true.append(self._environment_test._env_labels[self._environment_test._env_index])  
             y_pred.append(action.item())
-            next_state, reward, done = self._environment_test.step_env(action)
+            next_state, reward, done = self._environment_test.step_env_test(action)
             state = next_state
             
         self._end_time = time.time()

@@ -13,7 +13,6 @@ if [ -d "$VENV_DIR" ]; then
 else
     python3 -m venv $VENV_DIR
     echo "$VENV_DIR virtual environment not found, creating one..."
-
 fi
 # Check if requirements.txt exists
 if [ -f "requirements.txt" ]; then
@@ -29,10 +28,32 @@ cd ..
 
 echo "$PYTHON_PATH/$PYTHON_FILE"
 
+process=$1
+
+if [ -z "$process" ]; then
+    echo "Usage: $0 <Train|Test>"
+    exit 1
+fi
+
+echo -e "\nProcess Selected: $process"
+
+case $process in
+    "Train"|"train")
+        process_flag="Train"
+        ;;
+    "Test"|"test")
+        process_flag="Test"
+        ;;
+    *)
+        echo "Invalid Process."
+        exit 1
+        ;;
+esac
+
 if [ -f "$PYTHON_PATH/$PYTHON_FILE" ]; then 
     echo Running python script from $PYTHON_PATH...
     wandb login 605eb43377cc5aaffee00fb1274304e3ecccf0e7
-    python3 $PYTHON_PATH/$PYTHON_FILE --config $JSON_PATH --mode "Test"
+    python3 $PYTHON_PATH/$PYTHON_FILE --config $JSON_PATH --mode "$process_flag"
 
 else 
     echo "Python script not found!"
