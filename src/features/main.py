@@ -4,12 +4,12 @@ import time
 import json
 import argparse 
 from scapy.all import *
-import generator 
+import generalized_feature_generator 
 
 # AVAILABLE_MODEL_GENERATORS
 
 AVAILABLE_FEATURE_GENERATORS = {
-    "Deep_Q_Learning": generator.DQL_Generator
+    "Deep_Q_Network": generalized_feature_generator.DQN_Generator
 }
 
 def main():

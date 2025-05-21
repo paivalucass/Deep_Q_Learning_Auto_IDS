@@ -28,7 +28,7 @@ LABELING_SCHEMA_FACTORY = {
     "TOW_IDS_dataset_multi_class": labeling_schemas.tow_ids_multi_class_labeling_schema
 }
 
-class DQL_Generator(abstract_feature_generator.AbstractFeatureGenerator):
+class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
     def __init__(self, config: typing.Dict):
         self._window_size = config.get('window_size', DEFAULT_WINDOW_SIZE)
         self._number_of_bytes = config.get('number_of_bytes', DEFAULT_NUMBER_OF_BYTES)
@@ -58,7 +58,7 @@ class DQL_Generator(abstract_feature_generator.AbstractFeatureGenerator):
         }
 
         if self._dataset not in AVAILABLE_DATASETS:
-            raise KeyError(f"Selected dataset: {self._dataset} is NOT available for CNN IDS Feature Generator!")
+            raise KeyError(f"Selected dataset: {self._dataset} is NOT available for DQN IDS Feature Generator!")
 
         feature_generator = AVAILABLE_DATASETS[self._dataset](paths_dictionary)
 
@@ -133,58 +133,6 @@ class DQL_Generator(abstract_feature_generator.AbstractFeatureGenerator):
 
             np.savez(f"{paths_dictionary['output_path']}/X_{self._data_suffix}_{self._output_path_suffix}", X)
             np.savez(f"{paths_dictionary['output_path']}/y_{self._data_suffix}_{self._output_path_suffix}", y)
-            
-    def __remove_attacks(self, x_data, y_data, attack):
-        
-        y_data = np.array(y_data)
-        x_data = np.array(x_data)
-        
-        index_initial = 0
-        index_final = 0
-        counter = 0 
-        
-        labels = y_data[:,1]
-        
-        attack_count = np.sum(labels == attack)
-        
-        for i, label in enumerate(labels):
-            if label == attack:
-                counter += 1
-                if counter == 1:
-                    index_initial = i
-                elif counter == attack_count:
-                    index_final = i+1
-                    break
-                
-        print(f"!!! DELETED {attack_count} {attack} FROM DATASET !!!")
-                    
-        x_data = np.delete(x_data, np.s_[index_initial : index_final], axis=0)
-        y_data = np.delete(y_data, np.s_[index_initial : index_final], axis=0)        
-            
-        return x_data, y_data
-                    
-    def __randomize_data(x_data, y_data):
-        
-        x_data = np.array(x_data)
-        y_data = np.array(y_data)
-        permutation = np.random.permutation(len(x_data.shape[0]))
-        
-        x_data = x_data[permutation]
-        y_data = y_data[permutation]
-        
-        return x_data, y_data
-    
-    def __reduce_dataset(x_data, y_data, percentage):
-        
-        x_data = np.array(x_data)
-        y_data = np.array(y_data)
-        
-        size = (x_data.shape[0] * percentage) / 100
-        
-        x_data = x_data[:size]
-        y_data = y_data[:size]
-        
-        return x_data, y_data
             
     def __entropy_aggregation(self, arr):
     # Calculate entropy along the axis=0 for each column independently

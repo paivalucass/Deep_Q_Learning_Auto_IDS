@@ -1,8 +1,8 @@
 {
-    "feature_generator": "Deep_Q_Learning",
-    "mode": null,
+    "feature_generator": "Deep_Q_Network",
+    "mode": "generate_features",
     "config": {
-        "window_size": 44,
+        "window_size": 80,
         "window_slide": 1,
         "number_of_bytes": 58,
         "multiclass": false,
@@ -16,11 +16,11 @@
         "reduced_dataset": [false, 5]
     },
     "paths": {
-        "training_packets_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/raw_dataset/Automotive_Ethernet_with_Attack_original_10_17_19_50_training.pcap",
-        "test_packets_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/raw_dataset/Automotive_Ethernet_with_Attack_original_10_17_20_04_test.pcap",
-        "y_train_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/raw_dataset/y_train.csv",
-        "y_test_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/raw_dataset/y_test.csv",
-        "output_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/processed_train"
+        "training_packets_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/Automotive_Ethernet_with_Attack_original_10_17_19_50_training.pcap",
+        "test_packets_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/Automotive_Ethernet_with_Attack_original_10_17_20_04_test.pcap",
+        "y_train_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/y_train.csv",
+        "y_test_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/y_test.csv",
+        "output_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/features"
     },
     "load_paths": {
         "X_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/processed_train/X_train_TOW_IDS_dataset_one_class_Wsize_44_Cols_116_Wslide_1_MC_False_sumX_False_removedAttacks_['P_I'].npz",
@@ -37,8 +37,8 @@
     },
     "config_model": {
         "algorithm": "DQL",
-        "attack_train": "C_D",
-        "attack_test": "C_D",
+        "attack_train": "",
+        "attack_test": "",
         "policy_test": "exploitation",
         "feature_size": 116,
         "batch_size": 32,
