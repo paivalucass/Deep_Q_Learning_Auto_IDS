@@ -4,6 +4,9 @@ import typing
 import time
 from scipy.stats import entropy
 from scapy.all import *
+from scipy.spatial.distance import cdist
+from tqdm import tqdm
+from sklearn.ensemble import IsolationForest
 
 import abstract_feature_generator
 import labeling_schemas
@@ -88,30 +91,13 @@ class DQL_Generator(abstract_feature_generator.AbstractFeatureGenerator):
         print(f"len_preprocessed_packets = {len(preprocessed_packets)}")
         print(f"preprocessed_packets[0] = {preprocessed_packets[0]}")
 
-        # TODO: IF YOU WANT TO DO ANYTHING BEFORE THE DATASET IS LABELED DO IT BELLOW HERE
-        
-        if self._remove_attacks_list is not None:
-            
-            print("REMOVING ATTACKS")
-            
-            for attack in self._remove_attacks_list:
-                preprocessed_packets, labels = self.__remove_attacks(preprocessed_packets, labels, attack)
-                
-            labels = pd.DataFrame(labels, columns=['Class', 'Description'])
-        
-        if self._randomize:
-            preprocessed_packets, labels = self.__randomize_data(preprocessed_packets, labels)
-        
-        if self._reduced_dataset[0]:
-            preprocessed_packets, labels = self.__reduce_dataset(preprocessed_packets, labels, self._reduced_dataset[1])
-
         # Aggregate features and labels
         print(">> Aggregating and labeling...")
-        aggregated_X, aggregated_y = self.__aggregate_based_on_window_size(preprocessed_packets, labels)
+        features_array, labels = self.__anomaly_score_and_distance_based_on_window_size(preprocessed_packets, labels)
 
-        np.savez(f"{paths_dictionary['output_path']}/X_{self._data_suffix}_{self._output_path_suffix}", aggregated_X)
+        np.savez(f"{paths_dictionary['output_path']}/X_{self._data_suffix}_{self._output_path_suffix}", features_array)
 
-        y_df = pd.DataFrame(aggregated_y, columns=["Class"])
+        y_df = pd.DataFrame(labels, columns=["Class"])
         y_df.to_csv(f"{paths_dictionary['output_path']}/y_{self._data_suffix}_{self._output_path_suffix}.csv")
 
     def __avtp_dataset_generate_features(self, paths_dictionary: typing.Dict):
@@ -390,21 +376,73 @@ class DQL_Generator(abstract_feature_generator.AbstractFeatureGenerator):
 
         return nibbles
 
-
     def __preprocess_raw_packets(self, converted_packets, split_into_nibbles=True):
         # Select first 58 bytes
         selected_packets = self.__select_packets_bytes(converted_packets)
 
-        # Calculate difference and module between rows
-        diff_module_packets = self.__calculate_difference_module(selected_packets)
-
         # Split difference into two nibbles
         if split_into_nibbles:
             # diff_module_packets = self.__create_nibbles_matrix(diff_module_packets)
-            diff_module_packets = self.__split_into_nibbles(diff_module_packets)
+            nibbles_packets = self.__split_into_nibbles(selected_packets)
 
-        return diff_module_packets
+        return nibbles_packets
+    
+    def __anomaly_score_and_distance_based_on_window_size(self, x_data, y_data):
+        window_size = self._window_size
+        n_samples = x_data.shape[0]
+        
+        iso_forest = IsolationForest(random_state=42, contamination='auto')
+        iso_forest.fit(x_data)
 
+        anomaly_scores = -iso_forest.score_samples(x_data)  # Negative to make higher = more anomalous
+
+        distance_features = []
+        labels = []
+
+        for i in tqdm(range(n_samples)):
+            # Define the window before the sample
+            start_ix = max(0, i - window_size)
+            end_ix = i  
+
+            window_X = x_data[start_ix:end_ix]
+            window_y = y_data[start_ix:end_ix]
+
+            # Current point
+            current_sample = x_data[i]
+
+            # Split window points into normal and anomalous
+            normal_points = window_X[window_y == 0]
+            anomaly_points = window_X[window_y == 1]
+
+            # Distances to normal and anomaly points
+            distances_to_normals = cdist([current_sample], normal_points, metric='euclidean')[0] if len(normal_points) > 0 else []
+            distances_to_anomalies = cdist([current_sample], anomaly_points, metric='euclidean')[0] if len(anomaly_points) > 0 else []
+
+            # Compute averages (if any)
+            avg_distance_normal = np.mean(distances_to_normals) if len(distances_to_normals) > 0 else 0
+            avg_distance_anomaly = np.mean(distances_to_anomalies) if len(distances_to_anomalies) > 0 else 0
+
+            # Compute minimum distance to an anomaly
+            min_prev_dist_normal = np.min(distances_to_normals) if len(distances_to_normals) > 0 else 0
+            min_prev_dist_anomaly = np.min(distances_to_anomalies) if len(distances_to_anomalies) > 0 else 0
+            
+            # Verify neighbors for anomalies 
+            neighborhood = 1 if len(anomaly_points) > 0 else 0
+
+            # Final feature vector for this point
+            feature_vector = [
+                anomaly_scores[i],
+                min_prev_dist_normal,
+                min_prev_dist_anomaly,
+                avg_distance_normal,
+                avg_distance_anomaly,
+                neighborhood
+            ]
+
+            distance_features.append(feature_vector)
+            labels.append(y_data[i])
+
+        return np.array(distance_features, dtype=np.float32), np.array(labels)
 
     def __aggregate_based_on_window_size(self, x_data, y_data):
         # Prepare the list for the transformed data
