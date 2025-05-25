@@ -67,7 +67,8 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
     def __tow_ids_dataset_generate_features(self, paths_dictionary: typing.Dict):
         # Load raw packets
         labels = pd.read_csv(paths_dictionary["y_train_path"], header=None, names=["index", "Class", "Description"])
-        labels = labels.drop(columns=["index"])
+        labels = labels.drop(columns=["index", "Description"])
+        labels = labels["Class"].apply(lambda x: 0 if x.lower() == "normal" else 1).to_numpy()
         converted_packets_list = []
         raw_packets = rdpcap(paths_dictionary["training_packets_path"])
 
