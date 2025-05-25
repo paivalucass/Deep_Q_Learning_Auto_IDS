@@ -89,7 +89,7 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
 
         # Preprocess packets
         print(">> Preprocessing raw packets...")
-        preprocessed_packets = self.__preprocess_raw_packets(converted_packets, split_into_nibbles=True)
+        preprocessed_packets = self.__preprocess_raw_packets(converted_packets, split_into_nibbles=False)
 
         print(f"len_preprocessed_packets = {len(preprocessed_packets)}")
         print(f"preprocessed_packets[0] = {preprocessed_packets[0]}")
