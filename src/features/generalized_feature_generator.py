@@ -336,9 +336,9 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
         # Split difference into two nibbles
         if split_into_nibbles:
             # diff_module_packets = self.__create_nibbles_matrix(diff_module_packets)
-            nibbles_packets = self.__split_into_nibbles(selected_packets)
+            selected_packets = self.__split_into_nibbles(selected_packets)
 
-        return nibbles_packets
+        return selected_packets
     
     def __anomaly_score_and_distance_based_on_window_size(self, x_data, y_data):
         window_size = self._window_size
