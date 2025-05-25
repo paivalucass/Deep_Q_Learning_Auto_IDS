@@ -7,6 +7,7 @@ from scapy.all import *
 from scipy.spatial.distance import cdist
 from tqdm import tqdm
 from sklearn.ensemble import IsolationForest
+import joblib
 
 import abstract_feature_generator
 import labeling_schemas
@@ -93,12 +94,14 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
 
         # Aggregate features and labels
         print(">> Aggregating and labeling...")
-        features_array, labels = self.__anomaly_score_and_distance_based_on_window_size(preprocessed_packets, labels)
+        features_array, labels, scaler = self.__anomaly_score_and_distance(preprocessed_packets, labels)
 
         np.savez(f"{paths_dictionary['output_path']}/X_{self._data_suffix}_{self._output_path_suffix}", features_array)
 
         y_df = pd.DataFrame(labels, columns=["Class"])
         y_df.to_csv(f"{paths_dictionary['output_path']}/y_{self._data_suffix}_{self._output_path_suffix}.csv")
+        
+        joblib.dump(scaler, f"{paths_dictionary['output_path']}/scaler_{self._data_suffix}.pkl")
 
     def __avtp_dataset_generate_features(self, paths_dictionary: typing.Dict):
         raw_injected_only_packets = self.__read_raw_packets(paths_dictionary['injected_only_frame_path'])
@@ -155,7 +158,7 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
                         "P_I": 4,
                         "F_I": 5
                     }
-                )
+                )__anomaly_score_and_distance_based_on_window_size
             labels_array = np.array(y["Class"].values)
         else:
             y = np.load(paths_dictionary['y_path'])
@@ -324,7 +327,7 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
 
         return nibbles
 
-    def __preprocess_raw_packets(self, converted_packets, split_into_nibbles=True):
+    def __preprocess_raw_packets(self, converted_packets, split_into_nibbles=False):
         # Select first 58 bytes
         selected_packets = self.__select_packets_bytes(converted_packets)
 
@@ -389,8 +392,77 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
 
             distance_features.append(feature_vector)
             labels.append(y_data[i])
+            
+        features_array = np.array(distance_features, dtype=np.float32)
 
-        return np.array(distance_features, dtype=np.float32), np.array(labels)
+        scaler = MinMaxScaler()
+        features_array = scaler.fit_transform(features_array)
+
+        return features_array, np.array(labels), scaler
+    
+    def __anomaly_score_and_distance(self, x_data, y_data):
+        window_size = self._window_size
+        n_samples = x_data.shape[0]
+        
+        iso_forest = IsolationForest(random_state=42, contamination='auto')
+        iso_forest.fit(x_data)
+
+        anomaly_scores = -iso_forest.score_samples(x_data)  # Negative to make higher = more anomalous
+        
+        matrix_normal_points = x_data[y_data == 0]
+        matrix_anomaly_points = x_data[y_data == 1]
+
+        distance_features = []
+        labels = []
+
+        for i in tqdm(range(n_samples)):
+            # Define the window before the sample
+            start_ix = max(0, i - window_size)
+            end_ix = i  
+
+            window_X = x_data[start_ix:end_ix]
+            window_y = y_data[start_ix:end_ix]
+
+            # Current point
+            current_sample = x_data[i]
+
+            # Split window points into normal and anomalous
+            anomaly_points = window_X[window_y == 1]
+
+            # Distances to normal and anomaly points
+            distances_to_normals = cdist([current_sample], matrix_normal_points, metric='euclidean')[0] if len(matrix_normal_points) > 0 else []
+            distances_to_anomalies = cdist([current_sample], matrix_anomaly_points, metric='euclidean')[0] if len(matrix_anomaly_points) > 0 else []
+
+            # Compute averages (if any)
+            avg_distance_normal = np.mean(distances_to_normals) if len(distances_to_normals) > 0 else 0
+            avg_distance_anomaly = np.mean(distances_to_anomalies) if len(distances_to_anomalies) > 0 else 0
+
+            # Compute minimum distance to an anomaly
+            min_prev_dist_normal = np.min(distances_to_normals) if len(distances_to_normals) > 0 else 0
+            min_prev_dist_anomaly = np.min(distances_to_anomalies) if len(distances_to_anomalies) > 0 else 0
+            
+            # Verify neighbors for anomalies
+            neighborhood = 1 if len(anomaly_points) > 0 else 0
+
+            # Final feature vector for this point
+            feature_vector = [
+                anomaly_scores[i],
+                min_prev_dist_normal,
+                min_prev_dist_anomaly,
+                avg_distance_normal,
+                avg_distance_anomaly,
+                neighborhood
+            ]
+
+            distance_features.append(feature_vector)
+            labels.append(y_data[i])
+
+        features_array = np.array(distance_features, dtype=np.float32)
+
+        scaler = MinMaxScaler()
+        features_array = scaler.fit_transform(features_array)
+
+        return features_array, np.array(labels), scaler
 
     def __aggregate_based_on_window_size(self, x_data, y_data):
         # Prepare the list for the transformed data
