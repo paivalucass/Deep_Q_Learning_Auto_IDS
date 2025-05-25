@@ -459,10 +459,13 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
             labels.append(y_data[i])
 
         features_array = np.array(distance_features, dtype=np.float32)
+        
 
         scaler = MinMaxScaler()
         features_array = scaler.fit_transform(features_array)
 
+        print(features_array[0:5000])
+        
         return features_array, np.array(labels), scaler
 
     def __aggregate_based_on_window_size(self, x_data, y_data):
