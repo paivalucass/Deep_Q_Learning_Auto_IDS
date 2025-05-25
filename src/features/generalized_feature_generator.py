@@ -5,6 +5,7 @@ import time
 from scipy.stats import entropy
 from scapy.all import *
 from scipy.spatial.distance import cdist
+from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
 from sklearn.ensemble import IsolationForest
 import joblib
@@ -158,7 +159,7 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
                         "P_I": 4,
                         "F_I": 5
                     }
-                )__anomaly_score_and_distance_based_on_window_size
+                )
             labels_array = np.array(y["Class"].values)
         else:
             y = np.load(paths_dictionary['y_path'])
