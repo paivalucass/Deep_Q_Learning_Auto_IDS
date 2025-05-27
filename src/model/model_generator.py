@@ -76,21 +76,17 @@ class Environment():
         
         features_array = np.load(paths_dictionary["X_path"])
         features_array = features_array.f.arr_0      
-        
-        print(paths_dictionary["y_path"])
-        
-        labels_array = pd.read_csv(paths_dictionary["y_path"], header=None, names=["index", "Class"])
-        labels_array = labels_array.drop(columns=["index"])
-        labels_array = labels_array.to_numpy()
-        
-        # labels_array = np.load(paths_dictionary["y_path"])
-        # labels_array = labels_array.f.arr_0
-        
+                
         if self._dataset_type == "train":
+            labels_array = pd.read_csv(paths_dictionary["y_path"], header=None, names=["index", "Class"])
+            labels_array = labels_array.drop(columns=["index"])
+            labels_array = labels_array.to_numpy()
             features_array = features_array[self._start_train:self._end_train]
             labels_array = labels_array[self._start_train:self._end_train]
         
         else:
+            labels_array = np.load(paths_dictionary["y_path"])
+            labels_array = labels_array.f.arr_0
             features_array = features_array[self._start_test:self._end_test]
             labels_array = labels_array[self._start_test:self._end_test]
         
