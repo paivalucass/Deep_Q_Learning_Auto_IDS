@@ -13,6 +13,7 @@ from torch.optim import AdamW
 from sklearn.metrics import classification_report, confusion_matrix
 from tqdm import tqdm
 import wandb
+import pandas as pd
 
 NUM_ACTIONS = 2
 LOG_FILE_PATH = "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/output/metrics.log"
@@ -60,6 +61,9 @@ class Environment():
         self._max_steps = config["config_model"].get("n_steps", 10000)
         self._n_episodes_train = config["config_model"]["n_episodes_train"]
         self._proportion_intrusion = config["config_model"]["proportion_intrusion"]
+        self._matrix_normal_points = []
+        self._matrix_anomaly_points = []
+        self._distance_features = []
         self._proportion_normal = 1 - self._proportion_intrusion
         self._dataset_type = dataset_type
         self._env_data, self._env_labels = self.__build_dataset(dataset)
@@ -73,8 +77,12 @@ class Environment():
         features_array = np.load(paths_dictionary["X_path"])
         features_array = features_array.f.arr_0      
         
-        labels_array = np.load(paths_dictionary["y_path"])
-        labels_array = labels_array.f.arr_0
+        labels_array = pd.read_csv(paths_dictionary["y_path"], header=None, names=["Class"])
+        labels_array = labels_array.to_numpy()
+        labels_array - labels_array.f.arr_0
+        
+        # labels_array = np.load(paths_dictionary["y_path"])
+        # labels_array = labels_array.f.arr_0
         
         if self._dataset_type == "train":
             features_array = features_array[self._start_train:self._end_train]
@@ -274,7 +282,7 @@ class DQLModelGenerator():
             if episode % 100 == 0:
                 checkpoint_path = f"{self._checkpoint_path}_ep{episode}.pth"
                 torch.save(self.q_network.state_dict(), checkpoint_path)
-                self.test_model()
+                # self.test_model()
                 wandb.save(checkpoint_path)
 
         return stats        

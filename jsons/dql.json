@@ -25,15 +25,18 @@
     "load_paths": {
         "X_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/processed_train/X_train_TOW_IDS_dataset_one_class_Wsize_44_Cols_116_Wslide_1_MC_False_sumX_False_removedAttacks_['P_I'].npz",
         "y_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/processed_train/y_train_TOW_IDS_dataset_one_class_Wsize_44_Cols_116_Wslide_1_MC_False_sumX_False_removedAttacks_['P_I'].csv",
+        "scaler": "",
         "output_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/aggregated_npz/removed_aggregated_train"
     },
     "dataset_train_load_paths": {
-        "X_path":"/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/aggregated_npz/X_train_TOW_IDS_dataset_one_class_Entropy.npz",
-        "y_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/aggregated_npz/Y_train_TOW_IDS_dataset_one_class_Entropy.npz" 
+        "X_path":"/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/features/X_train_TOW_IDS_dataset_one_class_Wsize_80_Cols_116_Wslide_1_MC_False_sumX_False_removedAttacks_None.npz",
+        "y_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/features/y_train_TOW_IDS_dataset_one_class_Wsize_80_Cols_116_Wslide_1_MC_False_sumX_False_removedAttacks_None.csv" ,
+        "scaler": ""
     },
     "dataset_test_load_paths": {
         "X_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/aggregated_npz/X_test_TOW_IDS_dataset_one_class_Entropy.npz",
-        "y_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/aggregated_npz/Y_test_TOW_IDS_dataset_one_class_Entropy.npz"
+        "y_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/aggregated_npz/Y_test_TOW_IDS_dataset_one_class_Entropy.npz",
+        "scaler": ""
     },
     "config_model": {
         "algorithm": "DQL",
@@ -47,7 +50,7 @@
         "epsilon": 0.1,
         "epsilon_min": 0.01,
         "memory_size": 10000,
-        "n_episodes_train": 500,
+        "n_episodes_train": 250,
         "n_episodes_test": 1,
         "n_steps": 10000,
         "positive_reward": 1,
@@ -58,9 +61,9 @@
         "start_dataset_test": 0,
         "end_dataset_test": 790000,
         "proportion_intrusion": 0.5,
-        "positive_intrusion_multiplier": 1.2,
+        "positive_intrusion_multiplier": 1.0,
         "positive_normal_multiplier": 1.0,
-        "negative_intrusion_multiplier": 1.2,
+        "negative_intrusion_multiplier": 1.0,
         "negative_normal_multiplier": 1.0,
         "metric": ["Accuracy", "Recall", "F1_Score", "Precision", "ConfusionMatrix"],
         "save_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/DQN_equal_rewards_all_labels_1-2_positive_new_balancing_400_steps",
