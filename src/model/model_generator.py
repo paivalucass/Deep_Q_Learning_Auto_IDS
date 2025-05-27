@@ -79,7 +79,6 @@ class Environment():
         
         labels_array = pd.read_csv(paths_dictionary["y_path"], header=None, names=["Class"])
         labels_array = labels_array.to_numpy()
-        labels_array - labels_array.f.arr_0
         
         # labels_array = np.load(paths_dictionary["y_path"])
         # labels_array = labels_array.f.arr_0
