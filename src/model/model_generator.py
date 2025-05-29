@@ -78,9 +78,9 @@ class Environment():
         features_array = features_array.f.arr_0      
                 
         if self._dataset_type == "train":
-            labels_array = pd.read_csv(paths_dictionary["y_path"], header=None, names=["index", "Class"])
-            labels_array = labels_array.drop(columns=["index"])
-            labels_array = labels_array.to_numpy()
+            labels_array = pd.read_csv(paths_dictionary["y_path"], header=None, names=["Class"])
+            # labels_array = labels_array.drop(columns=["index"])
+            labels_array = labels_array.to_numpy().astype(int)
             
             features_array = features_array[self._start_train:self._end_train]
             labels_array = labels_array[self._start_train:self._end_train]
@@ -93,6 +93,7 @@ class Environment():
             labels_array = labels_array[self._start_test:self._end_test]
         
         print(f"Built dataset with shape: {features_array.shape}")
+        print(f"Loaded labels as:{labels_array}")
         
         return features_array, labels_array
     
