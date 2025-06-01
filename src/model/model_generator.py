@@ -79,8 +79,9 @@ class Environment():
                 
         if self._dataset_type == "train":
             if self._is_generalization:
-                labels_array = pd.read_csv(paths_dictionary["y_path"], header=None, names=["Class"])
-                labels_array = labels_array.to_numpy().astype(int)
+                labels_array = pd.read_csv(paths_dictionary["y_path"])
+                labels_array = np.array(labels_array["Class"].values)
+                labels_array = labels_array.f.arr_0
                 print(labels_array)
             else:
                 labels_array = np.load(paths_dictionary["y_path"])
