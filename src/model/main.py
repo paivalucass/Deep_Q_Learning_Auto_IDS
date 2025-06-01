@@ -34,7 +34,7 @@ def main():
 
     features_names = [f"feat_{i}" for i in range(config["config_model"]["feature_size"])]
         
-    dql = model_generator.DQLModelGenerator(config, features_names)
+    dql = model_generator.DQNModelGenerator(config, features_names)
     
     if args.mode == "Train":
         stats = dql.deep_q_learning()

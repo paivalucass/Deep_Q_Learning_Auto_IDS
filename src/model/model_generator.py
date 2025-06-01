@@ -34,8 +34,7 @@ class ReplayMemory():
         
     def sample(self): # Modifed the sampling from random to sequential
         assert self.can_sample()
-        start_idx = random.randint(self._batch_size, len(self.memory) - self._batch_size)
-        batch = self.memory[start_idx:start_idx + self._batch_size]
+        batch = random.sample(self.memory, self._batch_size)
         batch = zip(*batch)
         return [torch.cat(items) for items in batch]
 
@@ -61,6 +60,7 @@ class Environment():
         self._max_steps = config["config_model"].get("n_steps", 10000)
         self._n_episodes_train = config["config_model"]["n_episodes_train"]
         self._proportion_intrusion = config["config_model"]["proportion_intrusion"]
+        self._is_generalization = config["config_model"]["generalization"]
         self._matrix_normal_points = []
         self._matrix_anomaly_points = []
         self._distance_features = []
@@ -78,9 +78,13 @@ class Environment():
         features_array = features_array.f.arr_0      
                 
         if self._dataset_type == "train":
-            labels_array = pd.read_csv(paths_dictionary["y_path"], header=None, names=["Class"])
-            # labels_array = labels_array.drop(columns=["index"])
-            labels_array = labels_array.to_numpy().astype(int)
+            if self._is_generalization:
+                labels_array = pd.read_csv(paths_dictionary["y_path"], header=None, names=["Class"])
+                labels_array = labels_array.to_numpy().astype(int)
+                print(labels_array)
+            else:
+                labels_array = np.load(paths_dictionary["y_path"])
+                labels_array = labels_array.f.arr_0
             
             features_array = features_array[self._start_train:self._end_train]
             labels_array = labels_array[self._start_train:self._end_train]
@@ -170,7 +174,7 @@ class Environment():
         elif action == 1 and true_label == 0:
             return self._negative_reward * self._negative_normal_multiplier
 
-class DQLModelGenerator():
+class DQNModelGenerator():
     def __init__(self, config: typing.Dict, features_names):
 
         self._features_names = features_names
@@ -184,6 +188,7 @@ class DQLModelGenerator():
         self._n_episodes_train = config["config_model"]["n_episodes_train"]
         self._n_episodes_test = config["config_model"]["n_episodes_test"]
         self._n_steps = config["config_model"]["n_steps"]
+        self._checkpoint_frequency = config["config_model"]["checkpoint_frequency_per_episode"]
         self._replay_memory = ReplayMemory(config)
         self._environment_train = Environment(config, config["dataset_train_load_paths"], "train")
         self._environment_test = Environment(config, config["dataset_test_load_paths"], "test")
@@ -273,6 +278,9 @@ class DQLModelGenerator():
 
                 state = next_state
                 ep_return += reward.item()
+                
+            if self._epsilon > self._epsilon_min:
+                self._epsilon *= 0.996
 
             stats["Returns"].append(ep_return)
             
@@ -280,13 +288,13 @@ class DQLModelGenerator():
                 self._target_q_network.load_state_dict(self.q_network.state_dict())
             
             # TODO: parametrize checkpoint
-            if episode % 100 == 0:
+            if episode % self._checkpoint_frequency == 0:
                 checkpoint_path = f"{self._checkpoint_path}_ep{episode}.pth"
                 torch.save(self.q_network.state_dict(), checkpoint_path)
                 # self.test_model()
                 wandb.save(checkpoint_path)
 
-        return stats        
+        return stats
     
     def test_model(self):
         y_true = []
