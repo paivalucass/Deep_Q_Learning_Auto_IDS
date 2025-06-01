@@ -40,7 +40,7 @@
     },
     "config_model": {
         "algorithm": "DQN",
-        "generalization": true,
+        "generalization": false,
         "attack_train": "",
         "attack_test": "",
         "policy_test": "exploitation",
