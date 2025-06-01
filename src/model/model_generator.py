@@ -291,7 +291,7 @@ class DQNModelGenerator():
             if episode % self._checkpoint_frequency == 0:
                 checkpoint_path = f"{self._checkpoint_path}_ep{episode}.pth"
                 torch.save(self.q_network.state_dict(), checkpoint_path)
-                # self.test_model()
+                self.test_model()
                 wandb.save(checkpoint_path)
 
         return stats
