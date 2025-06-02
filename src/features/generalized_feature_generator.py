@@ -496,7 +496,7 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
                 labels.append(y_data[i])
                 
             features_array = np.array(distance_features, dtype=np.float32)
-            return features_array, np.array(labels), _
+            return features_array, np.array(labels), None
     
     def __aggregate_based_on_window_size(self, x_data, y_data):
         # Prepare the list for the transformed data
