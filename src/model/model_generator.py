@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from torch import nn as nn
 from torch.optim import AdamW
 from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.ensemble import IsolationForest
 from tqdm import tqdm
 import wandb
 import pandas as pd
@@ -91,8 +92,14 @@ class Environment():
             labels_array = labels_array[self._start_train:self._end_train]
         
         else:
-            labels_array = np.load(paths_dictionary["y_path"])
-            labels_array = labels_array.f.arr_0
+            if self._is_generalization:
+                labels_array = pd.read_csv(paths_dictionary["y_path"])
+                labels_array = np.array(labels_array["Class"].values)
+                labels_array = labels_array.f.arr_0
+                print(labels_array)
+            else:
+                labels_array = np.load(paths_dictionary["y_path"])
+                labels_array = labels_array.f.arr_0
             
             features_array = features_array[self._start_test:self._end_test]
             labels_array = labels_array[self._start_test:self._end_test]
@@ -323,6 +330,13 @@ class DQNModelGenerator():
         print("\nConfusion Matrix:")
         self._confusion_matrix = confusion_matrix(y_true, y_pred)
         print(self._confusion_matrix)
+        
+    def test_model_generalized(self):
+        y_true = []
+        y_pred = []
+        
+        # Adapt environment so that step test and reset env test make matrix for distance features calculations for each state
+        
         
     def save_metric(self, config: typing.Dict):
         

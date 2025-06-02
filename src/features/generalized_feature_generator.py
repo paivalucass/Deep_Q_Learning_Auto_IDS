@@ -66,11 +66,16 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
 
     def __tow_ids_dataset_generate_features(self, paths_dictionary: typing.Dict):
         # Load raw packets
-        labels = pd.read_csv(paths_dictionary["y_train_path"], header=None, names=["index", "Class", "Description"])
+        if self._data_suffix == "train":
+            labels = pd.read_csv(paths_dictionary["y_train_path"], header=None, names=["index", "Class", "Description"])
+            raw_packets = rdpcap(paths_dictionary["training_packets_path"])
+        elif self._data_suffix == "test":
+            labels = pd.read_csv(paths_dictionary["y_test_path"], header=None, names=["index", "Class", "Description"])
+            raw_packets = rdpcap(paths_dictionary["test_packets_path"])
+            
         labels = labels.drop(columns=["index", "Description"])
         labels = labels["Class"].apply(lambda x: 0 if x.lower() == "normal" else 1).to_numpy()
         converted_packets_list = []
-        raw_packets = rdpcap(paths_dictionary["training_packets_path"])
 
         print(">> Loading raw packets...")
         for raw_packet in raw_packets:
@@ -96,7 +101,11 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
 
         # Aggregate features and labels
         print(">> Aggregating and labeling...")
-        features_array, labels, scaler = self.__anomaly_score_and_distance(preprocessed_packets, labels)
+        
+        if self._data_suffix == "train":
+            features_array, labels, scaler = self.__anomaly_score_and_distance(preprocessed_packets, labels)
+        else:
+            features_array, labels, _ = self.__anomaly_score_and_distance(preprocessed_packets, labels)
 
         np.savez(f"{paths_dictionary['output_path']}/X_{self._data_suffix}_{self._output_path_suffix}", features_array)
 
@@ -141,8 +150,8 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
             
     def __entropy_aggregation(self, arr):
     # Calculate entropy along the axis=0 for each column independently
-        return np.apply_along_axis(lambda col: entropy(np.histogram(col, bins=10, density=True)[0]), axis=0, arr=arr)
-    
+        return np.apply_along_axis(lambda col: entropy(np.histogram(col, bins=10, density=True)[0]), axis=0, arr=arr)     
+        
     def __convert_labels(self, paths_dictionary: typing.Dict):
                 
         if (self._dataset == "TOW_IDS_dataset"):
@@ -411,64 +420,84 @@ class DQN_Generator(abstract_feature_generator.AbstractFeatureGenerator):
 
         anomaly_scores = -iso_forest.score_samples(x_data)  # Negative to make higher = more anomalous
         
-        matrix_normal_points = x_data[y_data == 0]
-        matrix_anomaly_points = x_data[y_data == 1]
-
         distance_features = []
         labels = []
 
-        for i in tqdm(range(n_samples)):
-            # Define the window before the sample
-            start_ix = max(0, i - window_size)
-            end_ix = i  
-
-            window_X = x_data[start_ix:end_ix]
-            window_y = y_data[start_ix:end_ix]
-
-            # Current point
-            current_sample = x_data[i]
-
-            # Split window points into normal and anomalous
-            anomaly_points = window_X[window_y == 1]
-
-            # Distances to normal and anomaly points
-            distances_to_normals = cdist([current_sample], matrix_normal_points, metric='euclidean')[0] if len(matrix_normal_points) > 0 else []
-            distances_to_anomalies = cdist([current_sample], matrix_anomaly_points, metric='euclidean')[0] if len(matrix_anomaly_points) > 0 else []
-
-            # Compute averages (if any)
-            avg_distance_normal = np.mean(distances_to_normals) if len(distances_to_normals) > 0 else 0
-            avg_distance_anomaly = np.mean(distances_to_anomalies) if len(distances_to_anomalies) > 0 else 0
-
-            # Compute minimum distance to an anomaly
-            min_prev_dist_normal = np.min(distances_to_normals) if len(distances_to_normals) > 0 else 0
-            min_prev_dist_anomaly = np.min(distances_to_anomalies) if len(distances_to_anomalies) > 0 else 0
+        if self._data_suffix == "train":
             
-            # Verify neighbors for anomalies
-            neighborhood = 1 if len(anomaly_points) > 0 else 0
+            matrix_normal_points = x_data[y_data == 0]
+            matrix_anomaly_points = x_data[y_data == 1]
 
-            # Final feature vector for this point
-            feature_vector = [
-                anomaly_scores[i],
-                min_prev_dist_normal,
-                min_prev_dist_anomaly,
-                avg_distance_normal,
-                avg_distance_anomaly,
-                neighborhood
-            ]
+            for i in tqdm(range(n_samples)):
+                # Define the window before the sample
+                start_ix = max(0, i - window_size)
+                end_ix = i  
 
-            distance_features.append(feature_vector)
-            labels.append(y_data[i])
+                window_X = x_data[start_ix:end_ix]
+                window_y = y_data[start_ix:end_ix]
 
-        features_array = np.array(distance_features, dtype=np.float32)
+                # Current point
+                current_sample = x_data[i]
+
+                # Split window points into normal and anomalous
+                anomaly_points = window_X[window_y == 1]
+
+                # Distances to normal and anomaly points
+                distances_to_normals = cdist([current_sample], matrix_normal_points, metric='euclidean')[0] if len(matrix_normal_points) > 0 else []
+                distances_to_anomalies = cdist([current_sample], matrix_anomaly_points, metric='euclidean')[0] if len(matrix_anomaly_points) > 0 else []
+
+                # Compute averages (if any)
+                avg_distance_normal = np.mean(distances_to_normals) if len(distances_to_normals) > 0 else 0
+                avg_distance_anomaly = np.mean(distances_to_anomalies) if len(distances_to_anomalies) > 0 else 0
+
+                # Compute minimum distance to an anomaly
+                min_prev_dist_normal = np.min(distances_to_normals) if len(distances_to_normals) > 0 else 0
+                min_prev_dist_anomaly = np.min(distances_to_anomalies) if len(distances_to_anomalies) > 0 else 0
+                
+                # Verify neighbors for anomalies
+                neighborhood = 1 if len(anomaly_points) > 0 else 0
+
+                # Final feature vector for this point
+                feature_vector = [
+                    anomaly_scores[i],
+                    min_prev_dist_normal,
+                    min_prev_dist_anomaly,
+                    avg_distance_normal,
+                    avg_distance_anomaly,
+                    neighborhood
+                ]
+
+                distance_features.append(feature_vector)
+                labels.append(y_data[i])
+
+            features_array = np.array(distance_features, dtype=np.float32)
+
+            scaler = MinMaxScaler()
+            features_array = scaler.fit_transform(features_array)
+
+            print(features_array[0:5000])
+            
+            return features_array, np.array(labels), scaler
         
+        else:
+            
+            for i in tqdm(range(n_samples)):
+                
+                feature_vector = [
+                    anomaly_scores[i],
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                ]
 
-        scaler = MinMaxScaler()
-        features_array = scaler.fit_transform(features_array)
-
-        print(features_array[0:5000])
-        
-        return features_array, np.array(labels), scaler
-
+                distance_features.append(feature_vector)
+                labels.append(y_data[i])
+                
+            features_array = np.array(distance_features, dtype=np.float32)
+            return features_array, np.array(labels), _
+    
     def __aggregate_based_on_window_size(self, x_data, y_data):
         # Prepare the list for the transformed data
         X, y = list(), list()
