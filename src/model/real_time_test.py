@@ -6,6 +6,12 @@ from scipy.stats import entropy
 import numpy as np
 from torch import nn as nn
 from scapy.all import *
+from collections import deque
+from rich.console import Console, Group
+from rich.table import Table
+from rich.live import Live
+from rich.panel import Panel
+from rich.text import Text
 
 DEFAULT_WINDOW_SIZE = 44
 NUM_ACTIONS = 2
@@ -24,38 +30,72 @@ class DQN_IDS():
         self.ids()
         
     def ids(self):
+        console = Console()
         
-        while True:
-            packets = sniff(iface='veth0', count=44)
-            
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"\n\033[1;33m[ {timestamp} ] Captured {len(packets)} packets\033[0m")
+        console.print("\n[bold blue]==== Starting DQN-based Intrusion Detection System ====\n[/bold blue]")
 
-            converted_packets = self.__convert_packets(packets)
-            selected_packets = self.__select_packets_bytes(converted_packets)
-            diff_module_packets = self.__calculate_difference_module(selected_packets)
-            nibbles_packets = self.__split_into_nibbles(diff_module_packets)
-            aggregated_package = self.__entropy_aggregation(nibbles_packets)
-            package = torch.from_numpy(aggregated_package).unsqueeze(dim=0).float()
-            prediction = self.__policy_test(package)
+        # Keep last 10 predictions as deque (timestamp, prediction)
+        history = deque(maxlen=10)
 
-            # Summary about captured packets
-            print("\033[1;36m--- Packet Summary ---\033[0m")
-            for idx, pkt in enumerate(packets[:3]):  # Show first 3 packets as example
-                raw_bytes = raw(pkt)[:16]  # First 16 bytes
-                hex_dump = ' '.join(f"{b:02x}" for b in raw_bytes)
-                print(f"Packet {idx+1}: Len={len(pkt)} Bytes | Head: {hex_dump}")
+        intrusion_count = 0
+        normal_count = 0
 
-            print("\033[1;36m-----------------------\033[0m")
+        with Live(refresh_per_second=2, console=console, screen=False) as live:
+            while True:
+                packets = sniff(iface='veth0', count=44)
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-            # Detection result
-            if prediction == 1:
-                print(f"\033[1;41m\033[97m[ INTRUSION DETECTED ]\033[0m")
-            else:
-                print(f"\033[1;42m\033[30m[ NORMAL TRAFFIC ]\033[0m")
+                converted_packets = self.__convert_packets(packets)
+                selected_packets = self.__select_packets_bytes(converted_packets)
+                diff_module_packets = self.__calculate_difference_module(selected_packets)
+                nibbles_packets = self.__split_into_nibbles(diff_module_packets)
+                aggregated_package = self.__entropy_aggregation(nibbles_packets)
+                package = torch.from_numpy(aggregated_package).unsqueeze(dim=0).float()
+                prediction = self.__policy_test(package)
 
-            print("\n" + "-"*50 + "\n")
-                
+                # Update counts
+                if prediction == 1:
+                    intrusion_count += 1
+                else:
+                    normal_count += 1
+
+                # Add to history
+                history.append((timestamp, prediction))
+
+                # Build main status table
+                status_table = Table(title="📡 DQN IDS - Real-time Status", expand=True)
+                status_table.add_column("Metric", style="cyan", no_wrap=True)
+                status_table.add_column("Value", style="magenta")
+
+                status_table.add_row("Captured Packets", str(len(packets)))
+                status_table.add_row("Intrusions Detected", str(intrusion_count))
+                status_table.add_row("Normal Traffic", str(normal_count))
+
+                # Build last 10 predictions table
+                history_table = Table(title="🕒 Last 10 Detections", expand=True)
+                history_table.add_column("Timestamp", style="green")
+                history_table.add_column("Prediction", style="bold")
+
+                for ts, pred in reversed(history):
+                    pred_str = "[red]INTRUSION[/red]" if pred == 1 else "[green]NORMAL[/green]"
+                    history_table.add_row(ts, pred_str)
+
+                # Prepare packet snapshot info
+                pkt_info_lines = []
+                for idx, pkt in enumerate(packets[:3]):
+                    raw_bytes = raw(pkt)[:16]
+                    hex_dump = ' '.join(f"{b:02x}" for b in raw_bytes)
+                    pkt_info_lines.append(f"[{idx+1}] Len={len(pkt)} | Head: {hex_dump}")
+
+                pkt_info_text = Text("\n".join(pkt_info_lines), style="yellow")
+                packet_panel = Panel(pkt_info_text, title="Packet Snapshots (First 3)", border_style="bright_blue")
+
+                # Compose full layout group
+                group = Group(status_table, history_table, packet_panel)
+
+                # Update live output
+                live.update(group)
+
     def __policy_test(self, state):
         av = self.dqn(state).detach()
         action = torch.argmax(av, dim = 1, keepdim=True)
