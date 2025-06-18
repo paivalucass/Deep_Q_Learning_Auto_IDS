@@ -9,7 +9,7 @@
         "labeling_schema": "TOW_IDS_dataset_one_class",
         "dataset": "TOW_IDS_dataset",
         "remove_attack": null,
-        "suffix": "train",
+        "suffix": "test",
         "aggregation_method": "Entropy",
         "sum_x": false,
         "randomize": false,
@@ -28,9 +28,9 @@
         "scaler": "",
         "output_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/aggregated_npz/removed_aggregated_train"
     },
-    "dataset_train_load_paths": { 
-        "X_path":"/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/aggregated_npz/X_train_TOW_IDS_dataset_one_class_Entropy.npz",
-        "y_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/aggregated_npz/Y_train_TOW_IDS_dataset_one_class_Entropy.npz" ,
+    "dataset_train_load_paths": {
+        "X_path":"/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/features/X_train_TOW_IDS_dataset_one_class_Wsize_80_Cols_116_Wslide_1_MC_False_sumX_False_removedAttacks_None.npz",
+        "y_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/features/y_train_TOW_IDS_dataset_one_class_Wsize_80_Cols_116_Wslide_1_MC_False_sumX_False_removedAttacks_None.csv" ,
         "scaler": ""
     },
     "dataset_test_load_paths": {
@@ -48,7 +48,7 @@
         "batch_size": 32,
         "alpha": 0.0001,
         "gamma": 0.99,
-        "epsilon": 0.3,
+        "epsilon": 0.7,
         "epsilon_min": 0.05,
         "memory_size": 10000,
         "n_episodes_train": 80000,
@@ -62,13 +62,14 @@
         "start_dataset_test": 0,
         "end_dataset_test": 790000,
         "proportion_intrusion": 0.5,
+        "target_update_frequency": 100,
         "checkpoint_frequency_per_episode": 1000,
         "positive_intrusion_multiplier": 1.2,
         "positive_normal_multiplier": 1.0,
         "negative_intrusion_multiplier": 1.2,
         "negative_normal_multiplier": 1.0,
         "metric": ["Accuracy", "Recall", "F1_Score", "Precision", "ConfusionMatrix"],
-        "save_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/DQN_equal_rewards_all_labels_1-2_positive_new_balancing_400_steps",
+        "save_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/DQN_IDS",
         "wandb_project": "DQN Research IDS"
     }
 }

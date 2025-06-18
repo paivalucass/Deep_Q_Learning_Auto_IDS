@@ -31,13 +31,14 @@ class ReplayMemory():
             self.memory.append(None)
         
         self.memory[self.position] = transition
-        self.position = (self.position + 1) % self._capacity # TODO: Does this reset affect the transitions??
+        self.position = (self.position + 1) % self._capacity 
         
-    def sample(self): # Modifed the sampling from random to sequential
+    # Random Sampling 
+    def sample(self): 
         assert self.can_sample()
         batch = random.sample(self.memory, self._batch_size)
         batch = zip(*batch)
-        return [torch.cat(items) for items in batch]
+        return [torch.cat(items) for items in batch] 
 
     def can_sample(self):
         return len(self.memory) >= self._batch_size * 10
@@ -112,33 +113,9 @@ class Environment():
     def reset_env(self):
         max_start = len(self._env_data) - self._max_steps - 1
         self._env_index = 0
-        self._step_counter = 0
-        
-        max_retries = 1000
-        retries = 0
 
-        while True:
-            self._start_index = random.randint(0, max_start)
-            window_labels = self._env_labels[self._start_index:self._start_index + self._max_steps - 1]
-            
-            if self._intrusion_counter >= (self._n_episodes_train * self._proportion_intrusion) and 1 in window_labels:
-                retries += 1
-                if retries >= max_retries:
-                    break
-                continue
-            
-            if self._normal_counter >= (self._n_episodes_train * self._proportion_normal) and 1 not in window_labels:
-                retries += 1
-                if retries >= max_retries:
-                    break
-                continue
-            
-            break  # Valid segment found
-
-        if 1 in window_labels:
-            self._intrusion_counter += 1
-        if 1 not in window_labels:
-            self._normal_counter += 1
+        # Randomized reset of enviroment state 
+        self._start_index = random.randint(0, max_start)
 
         state = self._env_data[self._start_index]
         return torch.from_numpy(state).unsqueeze(dim=0).float()
@@ -154,7 +131,7 @@ class Environment():
         reward = torch.tensor(self.__compute_reward(action, true_idx)).view(1, -1).float()
         
         self._env_index += 1
-        self._step_counter += 1
+        
         done = 1 if self._env_index >= self._max_steps else 0
 
         next_idx = self._start_index + self._env_index
@@ -190,6 +167,7 @@ class DQNModelGenerator():
         self._action_size = NUM_ACTIONS
         self._alpha = config["config_model"]["alpha"]
         self._gamma = config["config_model"]["gamma"]
+        self._target_update_frequency = config["config_model"]["target_update_frequency"]
         self._epsilon = config["config_model"]["epsilon"]
         self._epsilon_min = config["config_model"]["epsilon_min"]
         self._memory_size = config["config_model"]["memory_size"]
@@ -250,9 +228,6 @@ class DQNModelGenerator():
             ep_return = 0
 
             while not done:
-                """
-                This loop will pass over the whole dataset until it "finishes" passing throught all states
-                """
                 # Calculate an action to be taken, based on the policy output
                 action = self.__policy(state)
                 # Apply the action at the enviroment and returns new state and reward 
@@ -272,7 +247,8 @@ class DQNModelGenerator():
                     next_qsa_b = torch.max(next_qsa_b, dim=-1, keepdim=True)[0]
 
                     # Calculate the target q-value batch 
-                    target_b = reward_batch + (1 - done_batch) * self._gamma * next_qsa_b
+                    target_b = reward_batch + (self._gamma * next_qsa_b * (1 - done_batch))
+
                     # Calculate the mean squared error (loss function)
                     loss = F.mse_loss(qsa_b, target_b)
                     self.q_network.zero_grad()
@@ -292,12 +268,12 @@ class DQNModelGenerator():
 
             stats["Returns"].append(ep_return)
             
-            if episode % 10 == 0:
+            if episode % self._target_update_frequency == 0:
                 self._target_q_network.load_state_dict(self.q_network.state_dict())
             
-            # TODO: parametrize checkpoint
             if episode % self._checkpoint_frequency == 0:
                 checkpoint_path = f"{self._checkpoint_path}_ep{episode}.pth"
+                print(f"CHECKPOINT OF EPISODE {episode}")
                 torch.save(self.q_network.state_dict(), checkpoint_path)
                 self.test_model()
                 wandb.save(checkpoint_path)
