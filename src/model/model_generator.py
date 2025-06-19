@@ -264,7 +264,7 @@ class DQNModelGenerator():
                         "Episode": episode,
                         "Step": episode * len(stats['MSE Loss']),
                         "Epsilon": self._epsilon
-                    })
+                    }, step=episode)
 
                 state = next_state
                 ep_return += reward.item()
@@ -289,7 +289,7 @@ class DQNModelGenerator():
             wandb.log({
                 "Episode Return": ep_return,
                 "Episode": episode
-            })
+            }, step=self._cur_episode)
 
         return stats
     
