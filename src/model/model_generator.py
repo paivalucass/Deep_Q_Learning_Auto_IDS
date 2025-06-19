@@ -179,6 +179,7 @@ class DQNModelGenerator():
         self._environment_train = Environment(config, config["dataset_train_load_paths"], "train")
         self._environment_test = Environment(config, config["dataset_test_load_paths"], "test")
         self._logger = logging.getLogger(__name__)
+        self._cur_episode = 0
         logging.basicConfig(
         filename=LOG_FILE_PATH,  
         filemode='a',         
@@ -259,6 +260,12 @@ class DQNModelGenerator():
 
                     loss_val = loss.item()
                     stats['MSE Loss'].append(loss_val)
+                    wandb.log({
+                        "MSE Loss": loss_val,
+                        "Episode": episode,
+                        "Step": episode * len(stats['MSE Loss']),
+                        "Epsilon": self._epsilon
+                    })
 
                 state = next_state
                 ep_return += reward.item()
@@ -275,8 +282,15 @@ class DQNModelGenerator():
                 checkpoint_path = f"{self._checkpoint_path}_ep{episode}.pth"
                 print(f"CHECKPOINT OF EPISODE {episode}")
                 torch.save(self.q_network.state_dict(), checkpoint_path)
+                self._cur_episode = episode
                 self.test_model()
                 wandb.save(checkpoint_path)
+                
+            # Wandb log after each episode
+            wandb.log({
+                "Episode Return": ep_return,
+                "Episode": episode
+            })
 
         return stats
     
@@ -307,6 +321,15 @@ class DQNModelGenerator():
         self._confusion_matrix = confusion_matrix(y_true, y_pred)
         print(self._confusion_matrix)
         
+        wandb.log({
+            "Test Precision": self._c_report["Intrusion"]["precision"],
+            "Test Recall": self._c_report["Intrusion"]["recall"],
+            "Test F1": self._c_report["Intrusion"]["f1-score"],
+            "Test Accuracy": self._c_report["accuracy"],
+            "Test Time (s)": self._end_time - self._start_time
+        }, step=self._cur_episode)
+
+                
     def test_model_generalized(self):
         y_true = []
         y_pred = []

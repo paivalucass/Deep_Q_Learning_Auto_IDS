@@ -39,10 +39,6 @@ def main():
     if args.mode == "Train":
         stats = dql.deep_q_learning()
 
-        # Log training stats to wandb
-        for step, (loss, ret) in enumerate(zip(stats["MSE Loss"], stats["Returns"])):
-            wandb.log({"MSE Loss": loss, "Return": ret, "Step": step})
-
         # Save model to wandb
         model_path = f"{config['config_model']['save_path']}.pth"
         torch.save(dql.q_network.state_dict(), model_path)
