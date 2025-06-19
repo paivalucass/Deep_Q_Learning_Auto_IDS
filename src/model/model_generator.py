@@ -261,8 +261,6 @@ class DQNModelGenerator():
                     stats['MSE Loss'].append(loss_val)
                     wandb.log({
                         "MSE Loss": loss_val,
-                        "Episode": episode,
-                        "Step": episode * len(stats['MSE Loss']),
                         "Epsilon": self._epsilon
                     }, step=episode)
 
@@ -289,7 +287,7 @@ class DQNModelGenerator():
             wandb.log({
                 "Episode Return": ep_return,
                 "Episode": episode
-            }, step=self._cur_episode)
+            }, step=episode)
 
         return stats
     
