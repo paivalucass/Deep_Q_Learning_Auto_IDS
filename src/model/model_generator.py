@@ -170,7 +170,6 @@ class DQNModelGenerator():
         self._target_update_frequency = config["config_model"]["target_update_frequency"]
         self._epsilon = config["config_model"]["epsilon"]
         self._epsilon_min = config["config_model"]["epsilon_min"]
-        self._memory_size = config["config_model"]["memory_size"]
         self._n_episodes_train = config["config_model"]["n_episodes_train"]
         self._n_episodes_test = config["config_model"]["n_episodes_test"]
         self._n_steps = config["config_model"]["n_steps"]
