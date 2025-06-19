@@ -191,32 +191,53 @@ class DQNModelGenerator():
         self._end_time = 0
         self._c_report = None
         self._confusion_matrix = None
-    
+        
     def __build_network(self):
         return nn.Sequential(
-            nn.Linear(self._state_size, 256),
+            nn.Linear(self._state_size, 128),
+            nn.LayerNorm(128),  # Better than BatchNorm for RL
             nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.ReLU(),
+            nn.Dropout(0.2),    # Regularization
+            
             nn.Linear(128, 64),
+            nn.LayerNorm(64),
             nn.ReLU(),
+            
             nn.Linear(64, 32),
+            nn.LayerNorm(32),
             nn.ReLU(),
-            nn.Linear(32, NUM_ACTIONS)
+            
+            nn.Linear(32, NUM_ACTIONS)  # Output: Q-values for each action
         )
     
+    # def __build_network(self):
+    #     return nn.Sequential(
+    #         nn.Linear(self._state_size, 256),
+    #         nn.ReLU(),
+    #         nn.Linear(256, 128),
+    #         nn.ReLU(),
+    #         nn.Linear(128, 64),
+    #         nn.ReLU(),
+    #         nn.Linear(64, 32),
+    #         nn.ReLU(),
+    #         nn.Linear(32, NUM_ACTIONS)
+    #     )
+    
     def __policy(self, state):
+        self.q_network.train()
         if torch.rand(1) < self._epsilon:
             return torch.randint(NUM_ACTIONS, (1,1))
         av = self.q_network(state).detach()
         return torch.argmax(av, dim = 1, keepdim=True)
     
     def __policy_test(self, state):
+        self.q_network.eval()
         av = self.q_network(state).detach()
         return torch.argmax(av, dim = 1, keepdim=True)
         
     def deep_q_learning(self):
         """ Initialize Neural Network Optimizer """
+        self.q_network.train()
 
         optim = AdamW(self.q_network.parameters(), lr=self._alpha)
         stats = {'MSE Loss': [], 'Returns': []}
@@ -274,6 +295,7 @@ class DQNModelGenerator():
             
             if episode % self._target_update_frequency == 0:
                 self._target_q_network.load_state_dict(self.q_network.state_dict())
+                self._target_q_network.eval()
             
             if episode % self._checkpoint_frequency == 0:
                 checkpoint_path = f"{self._checkpoint_path}_ep{episode}.pth"
@@ -292,6 +314,7 @@ class DQNModelGenerator():
         return stats
     
     def test_model(self):
+        self.q_network.eval()
         y_true = []
         y_pred = []
 

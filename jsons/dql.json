@@ -45,7 +45,7 @@
         "attack_test": "",
         "policy_test": "exploitation",
         "feature_size": 116,
-        "batch_size": 32,
+        "batch_size": 64,
         "alpha": 0.00001,
         "gamma": 0.99,
         "epsilon": 0.5,
