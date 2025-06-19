@@ -268,7 +268,7 @@ class DQNModelGenerator():
                 ep_return += reward.item()
                 
             if self._epsilon > self._epsilon_min:
-                self._epsilon *= 0.999
+                self._epsilon *= 0.9999
 
             stats["Returns"].append(ep_return)
             
