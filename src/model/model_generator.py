@@ -289,7 +289,7 @@ class DQNModelGenerator():
                 ep_return += reward.item()
                 
             if self._epsilon > self._epsilon_min:
-                self._epsilon *= 0.998
+                self._epsilon *= 0.999
 
             stats["Returns"].append(ep_return)
             
@@ -304,6 +304,7 @@ class DQNModelGenerator():
                 self._cur_episode = episode
                 self.test_model()
                 wandb.save(checkpoint_path)
+                self.q_network.train()
                 
             # Wandb log after each episode
             wandb.log({
