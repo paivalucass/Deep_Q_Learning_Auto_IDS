@@ -15,6 +15,7 @@ from sklearn.ensemble import IsolationForest
 from tqdm import tqdm
 import wandb
 import pandas as pd
+from features import DQNFeatureGenerator
 
 NUM_ACTIONS = 2
 LOG_FILE_PATH = "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/output/metrics.log"
@@ -45,10 +46,21 @@ class ReplayMemory():
         
     def __len__(self):
         return len(self.memory)
+    
+class OnlineFeatureExtractor():
+    def __init__(self, x_data, window_size):
+        self.window_size = window_size
+        print(">> Assembling Isolation Forest...")
+        self.iso_forest = IsolationForest(random_state=42, contamination='auto')
+        self.iso_forest.fit(x_data)
+        
+    def update_buffer(self, packet):
+        pass
 
 class Environment():
-    def __init__(self, config: typing.Dict, dataset: typing.Dict, dataset_type = "train"):
+    def __init__(self, config: typing.Dict, dataset_type = "train"):
         self._env_index = 0
+        self._config = config
         self._positive_reward = config["config_model"]["positive_reward"]
         self._negative_reward = config["config_model"]["negative_reward"]
         self._start_train = config["config_model"]["start_dataset_train"]
@@ -68,47 +80,15 @@ class Environment():
         self._distance_features = []
         self._proportion_normal = 1 - self._proportion_intrusion
         self._dataset_type = dataset_type
-        self._env_data, self._env_labels = self.__build_dataset(dataset)
+        self._feature_generator = DQNFeatureGenerator(config, dataset_type=dataset_type)
+        self._env_data, self._env_labels, self._env_labels_multiclass = self.__build_dataset()
         self._start_index = 0
         self._env_index = 0
         self._intrusion_counter = 0
         self._normal_counter = 0
 
-    def __build_dataset(self, paths_dictionary: typing.Dict):
-        
-        features_array = np.load(paths_dictionary["X_path"])
-        features_array = features_array.f.arr_0      
-                
-        if self._dataset_type == "train":
-            if self._is_generalization:
-                labels_array = pd.read_csv(paths_dictionary["y_path"])
-                labels_array = np.array(labels_array["Class"].values)
-                labels_array = labels_array.f.arr_0
-                print(labels_array)
-            else:
-                labels_array = np.load(paths_dictionary["y_path"])
-                labels_array = labels_array.f.arr_0
-            
-            features_array = features_array[self._start_train:self._end_train]
-            labels_array = labels_array[self._start_train:self._end_train]
-        
-        else:
-            if self._is_generalization:
-                labels_array = pd.read_csv(paths_dictionary["y_path"])
-                labels_array = np.array(labels_array["Class"].values)
-                labels_array = labels_array.f.arr_0
-                print(labels_array)
-            else:
-                labels_array = np.load(paths_dictionary["y_path"])
-                labels_array = labels_array.f.arr_0
-            
-            features_array = features_array[self._start_test:self._end_test]
-            labels_array = labels_array[self._start_test:self._end_test]
-        
-        print(f"Built dataset with shape: {features_array.shape}")
-        print(f"Loaded labels as:{labels_array}")
-        
-        return features_array, labels_array
+    def __build_dataset(self):
+        return self._feature_generator.generate_features(self._config["paths"])
     
     def reset_env(self):
         max_start = len(self._env_data) - self._max_steps - 1
@@ -175,8 +155,8 @@ class DQNModelGenerator():
         self._n_steps = config["config_model"]["n_steps"]
         self._checkpoint_frequency = config["config_model"]["checkpoint_frequency_per_episode"]
         self._replay_memory = ReplayMemory(config)
-        self._environment_train = Environment(config, config["dataset_train_load_paths"], "train")
-        self._environment_test = Environment(config, config["dataset_test_load_paths"], "test")
+        self._environment_train = Environment(config, "train")
+        self._environment_test = Environment(config, "test")
         self._logger = logging.getLogger(__name__)
         self._cur_episode = 0
         logging.basicConfig(
@@ -209,19 +189,6 @@ class DQNModelGenerator():
             
             nn.Linear(32, NUM_ACTIONS)  # Output: Q-values for each action
         )
-    
-    # def __build_network(self):
-    #     return nn.Sequential(
-    #         nn.Linear(self._state_size, 256),
-    #         nn.ReLU(),
-    #         nn.Linear(256, 128),
-    #         nn.ReLU(),
-    #         nn.Linear(128, 64),
-    #         nn.ReLU(),
-    #         nn.Linear(64, 32),
-    #         nn.ReLU(),
-    #         nn.Linear(32, NUM_ACTIONS)
-    #     )
     
     def __policy(self, state):
         self.q_network.train()
@@ -349,10 +316,3 @@ class DQNModelGenerator():
             "Test Accuracy": self._c_report["accuracy"],
             "Test Time (s)": self._end_time - self._start_time
         }, step=self._cur_episode)
-
-                
-    # def test_model_generalized(self):
-    #     y_true = []
-    #     y_pred = []
-        
-    #     # Adapt environment so that step test and reset env test make matrix for distance features calculations for each state
