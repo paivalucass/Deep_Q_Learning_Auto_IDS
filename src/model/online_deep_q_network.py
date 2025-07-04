@@ -16,6 +16,8 @@ from tqdm import tqdm
 import wandb
 import pandas as pd
 from features import DQNFeatureGenerator
+from collections import deque
+from scipy.spatial.distance import cdist
 
 NUM_ACTIONS = 2
 LOG_FILE_PATH = "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/output/metrics.log"
@@ -47,16 +49,64 @@ class ReplayMemory():
     def __len__(self):
         return len(self.memory)
     
-class OnlineFeatureExtractor():
-    def __init__(self, x_data, window_size):
-        self.window_size = window_size
+class Buffer():
+    def __init__(self, x_data, config: typing.Dict):
         print(">> Assembling Isolation Forest...")
-        self.iso_forest = IsolationForest(random_state=42, contamination='auto')
-        self.iso_forest.fit(x_data)
+        iso_forest = IsolationForest(random_state=42, contamination='auto')
+        iso_forest.fit(x_data)
+        self._anomaly_scores = -iso_forest.score_samples(x_data)
+        self._normal_buffer = deque(maxlen=config["config_model"]["normal_buffer_sizee_reward"])
+        self._anomaly_buffer = deque(maxlen=config["config_model"]["negative_normal_multiplier"])
+        self._k_neighbor = config["config_model"]["k-neighbor"]
         
-    def update_buffer(self, packet):
-        pass
+    def update_buffer(self, packet, label):
+        if label == 0:
+            self._normal_buffer.append(packet)
+        elif label == 1:
+            self._anomaly_buffer.append(packet)
+    
+    def extract_features(self, packet, index):
+        anomaly_score = self._anomaly_scores[index]
 
+        if len(self._normal_buffer) > 0:
+            normal_points = np.array(self._normal_buffer)
+            dist_normals = cdist([packet], normal_points, metric='euclidean')[0]
+            avg_dist_normal = np.mean(dist_normals)
+            min_dist_normal = np.min(dist_normals)
+        else:
+            avg_dist_normal = 0
+            min_dist_normal = 0
+
+        if len(self._anomaly_buffer) > 0:
+            anomaly_points = np.array(self._anomaly_buffer)
+            dist_anomalies = cdist([packet], anomaly_points, metric='euclidean')[0]
+            avg_dist_anomaly = np.mean(dist_anomalies)
+            min_dist_anomaly = np.min(dist_anomalies)
+        else:
+            avg_dist_anomaly = 0
+            min_dist_anomaly = 0
+
+        combined = np.array(list(self._normal_buffer) + list(self._anomaly_buffer))
+        labels = np.array([0]*len(self._normal_buffer) + [1]*len(self._anomaly_buffer))
+
+        if len(combined) > 0:
+            distances = cdist([packet], combined, metric='euclidean')[0]
+            k = min(10, len(distances))
+            knn_indices = np.argsort(distances)[:k]
+            knn_labels = labels[knn_indices]
+            neighborhood = 1 if np.any(knn_labels == 1) else 0
+        else:
+            neighborhood = 0
+
+        return np.array([
+            anomaly_score,
+            min_dist_normal,
+            min_dist_anomaly,
+            avg_dist_normal,
+            avg_dist_anomaly,
+            neighborhood
+        ], dtype=np.float32)
+        
 class Environment():
     def __init__(self, config: typing.Dict, dataset_type = "train"):
         self._env_index = 0
@@ -82,6 +132,7 @@ class Environment():
         self._dataset_type = dataset_type
         self._feature_generator = DQNFeatureGenerator(config, dataset_type=dataset_type)
         self._env_data, self._env_labels, self._env_labels_multiclass = self.__build_dataset()
+        self._buffer = Buffer(x_data=self._env_data, config=config)
         self._start_index = 0
         self._env_index = 0
         self._intrusion_counter = 0
