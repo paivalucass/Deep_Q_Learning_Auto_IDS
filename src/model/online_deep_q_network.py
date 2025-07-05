@@ -65,7 +65,7 @@ class Buffer():
         elif label == 1:
             self._anomaly_buffer.append(packet)
     
-    def extract_features(self, packet, index):
+    def extract_state(self, packet, index):
         anomaly_score = self._anomaly_scores[index]
 
         if len(self._normal_buffer) > 0:
@@ -132,7 +132,7 @@ class Environment():
         self._dataset_type = dataset_type
         self._feature_generator = DQNFeatureGenerator(config, dataset_type=dataset_type)
         self._env_data, self._env_labels, self._env_labels_multiclass = self.__build_dataset()
-        self._buffer = Buffer(x_data=self._env_data, config=config)
+        self.buffer = Buffer(x_data=self._env_data, config=config)
         self._start_index = 0
         self._env_index = 0
         self._intrusion_counter = 0
@@ -148,13 +148,16 @@ class Environment():
         # Randomized reset of enviroment state 
         self._start_index = random.randint(0, max_start)
 
-        state = self._env_data[self._start_index]
-        return torch.from_numpy(state).unsqueeze(dim=0).float()
+        raw_packet = self._env_data[self._start_index]
+        state = self.buffer.extract_state(raw_packet, self._start_index)
+        return torch.from_numpy(state).unsqueeze(dim=0).float(), raw_packet
     
     def reset_env_test(self):
         self._env_index = 0
-        state = self._env_data[0]
-        return torch.from_numpy(state).unsqueeze(dim=0).float()
+        
+        raw_packet = self._env_data[0]
+        state = self.buffer.extract_state(raw_packet, self._start_index)
+        return torch.from_numpy(state).unsqueeze(dim=0).float(), raw_packet
 
     def step_env(self, action):
         action = action.item()
@@ -165,19 +168,24 @@ class Environment():
         
         done = 1 if self._env_index >= self._max_steps else 0
 
-        next_idx = self._start_index + self._env_index
-        next_state = torch.from_numpy(self._env_data[next_idx]).unsqueeze(dim=0).float()
+        next_idx = self._start_index + self._env_index        
+        
+        raw_packet = self._env_data[next_idx]
+        next_state = self.buffer.extract_state(raw_packet)
+        next_state = torch.from_numpy(next_state).unsqueeze(dim=0).float()
 
-        return next_state, reward, torch.tensor(done).view(1, -1)
+        return next_state, reward, torch.tensor(done).view(1, -1), raw_packet
     
     def step_env_test(self, action):
         action = action.item()
         reward = torch.tensor(self.__compute_reward(action, self._env_index)).view(1, -1).float()
         self._env_index += 1
-        next_state = torch.from_numpy(self._env_data[self._env_index]).unsqueeze(dim=0).float()
+        raw_packet = self._env_data[self._env_index]
+        next_state = self.buffer.extract_state(raw_packet)
+        next_state = torch.from_numpy(next_state).unsqueeze(dim=0).float()
         done = 1 if self._env_index == self._env_data.shape[0] - 1 else 0
         done = torch.tensor(done).view(1, -1)
-        return next_state, reward, done  
+        return next_state, reward, done, raw_packet
         
     def __compute_reward(self, action, true_idx):
         true_label = self._env_labels[true_idx]
@@ -262,15 +270,17 @@ class DQNModelGenerator():
 
         for episode in tqdm(range(1, self._n_episodes_train + 1)):
             
-            state = self._environment_train.reset_env()
+            state, raw_packet = self._environment_train.reset_env()
             done = False
             ep_return = 0
 
             while not done:
                 # Calculate an action to be taken, based on the policy output
                 action = self.__policy(state)
+                self._environment_train.buffer.update_buffer(raw_packet, action)
+                
                 # Apply the action at the enviroment and returns new state and reward 
-                next_state, reward, done = self._environment_train.step_env(action)
+                next_state, reward, done, raw_packet = self._environment_train.step_env(action)
                 # Insert the transition in the replay memory so it can be used by the Q-Network 
                 self._replay_memory.insert([state, action, reward, done, next_state])
                 
@@ -336,18 +346,21 @@ class DQNModelGenerator():
         self.q_network.eval()
         y_true = []
         y_pred = []
+        test_reward = []
 
-        state = self._environment_test.reset_env_test() 
+        state, raw_packet = self._environment_test.reset_env_test() 
         done = False
         
         self._start_time = time.time()
 
         while not done:
             action = self.__policy_test(state) 
+            self._environment_test.buffer.update_buffer(raw_packet, action)
             
             y_true.append(self._environment_test._env_labels[self._environment_test._env_index])  
             y_pred.append(action.item())
-            next_state, reward, done = self._environment_test.step_env_test(action)
+            next_state, reward, done, raw_packet = self._environment_test.step_env_test(action)
+            test_reward.append(reward)
             state = next_state
             
         self._end_time = time.time()
@@ -364,6 +377,7 @@ class DQNModelGenerator():
             "Test Precision": self._c_report["Intrusion"]["precision"],
             "Test Recall": self._c_report["Intrusion"]["recall"],
             "Test F1": self._c_report["Intrusion"]["f1-score"],
+            "Test Reward": test_reward,
             "Test Accuracy": self._c_report["accuracy"],
             "Test Time (s)": self._end_time - self._start_time
         }, step=self._cur_episode)
