@@ -54,9 +54,11 @@ class Buffer():
         print(">> Assembling Isolation Forest...")
         iso_forest = IsolationForest(random_state=42, contamination='auto')
         iso_forest.fit(x_data)
+        self._normal_buffer_size = config["config_model"]["normal_buffer_size"]
+        self._anonaly_buffer_size = config["config_model"]["anomaly_buffer_size"]
         self._anomaly_scores = -iso_forest.score_samples(x_data)
-        self._normal_buffer = deque(maxlen=config["config_model"]["normal_buffer_sizee_reward"])
-        self._anomaly_buffer = deque(maxlen=config["config_model"]["negative_normal_multiplier"])
+        self._normal_buffer = deque(maxlen=self._normal_buffer_size)
+        self._anomaly_buffer = deque(maxlen=self._anonaly_buffer_size)
         self._k_neighbor = config["config_model"]["k-neighbor"]
         
     def update_buffer(self, packet, label):
@@ -64,6 +66,9 @@ class Buffer():
             self._normal_buffer.append(packet)
         elif label == 1:
             self._anomaly_buffer.append(packet)
+            
+    def _minmax(self, feature, minimum, maximum):
+        return (feature - minimum) / maximum - minimum
     
     def extract_state(self, packet, index):
         anomaly_score = self._anomaly_scores[index]
@@ -97,6 +102,13 @@ class Buffer():
             neighborhood = 1 if np.any(knn_labels == 1) else 0
         else:
             neighborhood = 0
+            
+        # Normalization
+        anomaly_score = self._minmax(anomaly_score, -0.5, 0.5)
+        min_dist_normal = self._minmax(min_dist_normal, 0, 15)
+        avg_dist_normal = self._minmax(avg_dist_normal, 0, 15)
+        min_dist_anomaly = self._minmax(min_dist_anomaly, 0, 15)
+        avg_dist_anomaly = self._minmax(avg_dist_anomaly, 0, 15)
 
         return np.array([
             anomaly_score,
