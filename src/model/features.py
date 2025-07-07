@@ -70,6 +70,8 @@ class DQNFeatureGenerator():
         preprocessed_packets = self.__preprocess_raw_packets(converted_packets, split_into_nibbles=True)
         
         print(preprocessed_packets[:50])
+        print(labels_binary[:50])
+        print(labels_multiclass[:50])
         
         return preprocessed_packets, labels_binary, labels_multiclass
             
