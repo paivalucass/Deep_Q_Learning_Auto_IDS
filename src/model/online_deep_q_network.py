@@ -185,7 +185,7 @@ class Environment():
         next_idx = self._start_index + self._env_index        
         
         raw_packet = self._env_data[next_idx]
-        next_state = self.buffer.extract_state(raw_packet)
+        next_state = self.buffer.extract_state(raw_packet, next_idx)
         next_state = torch.from_numpy(next_state).unsqueeze(dim=0).float()
         
         if self._debug:
@@ -198,7 +198,7 @@ class Environment():
         reward = torch.tensor(self.__compute_reward(action, self._env_index)).view(1, -1).float()
         self._env_index += 1
         raw_packet = self._env_data[self._env_index]
-        next_state = self.buffer.extract_state(raw_packet)
+        next_state = self.buffer.extract_state(raw_packet, self._env_index)
         next_state = torch.from_numpy(next_state).unsqueeze(dim=0).float()
         done = 1 if self._env_index == self._env_data.shape[0] - 1 else 0
         done = torch.tensor(done).view(1, -1)
