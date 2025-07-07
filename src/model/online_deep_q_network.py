@@ -153,7 +153,7 @@ class Environment():
         self._normal_counter = 0
 
     def __build_dataset(self):
-        return self._feature_generator.generate_features(self._config["paths"])
+        return self._feature_generator.generate_features()
     
     def reset_env(self):
         max_start = len(self._env_data) - self._max_steps - 1
