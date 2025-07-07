@@ -79,8 +79,8 @@ class Buffer():
         
         if self._debug:
             print(f"anomaly score: {anomaly_score}")
-            print(f"len normal buffer: {self._normal_buffer}")
-            print(f"len anomaly buffer: {self._anomaly_buffer}")
+            print(f"len normal buffer: {len(self._normal_buffer)}")
+            print(f"len anomaly buffer: {len(self._anomaly_buffer)}")
 
         if len(self._normal_buffer) > 0:
             normal_points = np.array(self._normal_buffer)
