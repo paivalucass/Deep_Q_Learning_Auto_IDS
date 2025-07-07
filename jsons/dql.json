@@ -45,7 +45,7 @@
         "attack_train": "P_I",
         "attack_test": "P_I",
         "policy_test": "exploitation",
-        "feature_size": 116,
+        "feature_size": 6,
         "batch_size": 32,
         "alpha": 0.0001,
         "gamma": 0.99,

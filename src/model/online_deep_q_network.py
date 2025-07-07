@@ -73,6 +73,7 @@ class Buffer():
     
     def extract_state(self, packet, index):
         anomaly_score = self._anomaly_scores[index]
+        print(f"anomaly score: {anomaly_score}")
 
         if len(self._normal_buffer) > 0:
             normal_points = np.array(self._normal_buffer)
@@ -164,6 +165,10 @@ class Environment():
 
         raw_packet = self._env_data[self._start_index]
         state = self.buffer.extract_state(raw_packet, self._start_index)
+        
+        if self._debug:
+            print(f"STATE: {state}")
+        
         return torch.from_numpy(state).unsqueeze(dim=0).float(), raw_packet
     
     def reset_env_test(self):
@@ -186,10 +191,12 @@ class Environment():
         
         raw_packet = self._env_data[next_idx]
         next_state = self.buffer.extract_state(raw_packet, next_idx)
-        next_state = torch.from_numpy(next_state).unsqueeze(dim=0).float()
         
         if self._debug:
             print(f"STATE: {next_state}")
+            
+        next_state = torch.from_numpy(next_state).unsqueeze(dim=0).float()
+        
 
         return next_state, reward, torch.tensor(done).view(1, -1), raw_packet
     
@@ -250,20 +257,15 @@ class DQNModelGenerator():
         
     def __build_network(self):
         return nn.Sequential(
-            nn.Linear(self._state_size, 128),
-            nn.LayerNorm(128),  # Better than BatchNorm for RL
-            nn.ReLU(),
-            nn.Dropout(0.2),    # Regularization
-            
-            nn.Linear(128, 64),
+            nn.Linear(6, 64),
             nn.LayerNorm(64),
             nn.ReLU(),
             
             nn.Linear(64, 32),
             nn.LayerNorm(32),
             nn.ReLU(),
-            
-            nn.Linear(32, NUM_ACTIONS)  # Output: Q-values for each action
+
+            nn.Linear(32, NUM_ACTIONS)
         )
     
     def __policy(self, state):
