@@ -37,7 +37,8 @@ class DQNFeatureGenerator():
         if self._dataset not in AVAILABLE_DATASETS:
             raise KeyError(f"Selected dataset: {self._dataset} is NOT available for DQN IDS Feature Generator!")
 
-        feature_generator = AVAILABLE_DATASETS[self._dataset]()
+        return AVAILABLE_DATASETS[self._dataset]()
+        
         
     def __tow_ids_dataset_generate_features(self):
         # Load raw packets
