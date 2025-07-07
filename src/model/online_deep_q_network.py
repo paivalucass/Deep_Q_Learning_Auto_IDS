@@ -12,6 +12,7 @@ from torch import nn as nn
 from torch.optim import AdamW
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
 import wandb
 import pandas as pd
@@ -57,7 +58,9 @@ class Buffer():
         iso_forest.fit(x_data)
         self._normal_buffer_size = config["config_model"]["normal_buffer_size"]
         self._anonaly_buffer_size = config["config_model"]["anomaly_buffer_size"]
-        self._anomaly_scores = -iso_forest.score_samples(x_data)
+        anomaly_scores = -iso_forest.score_samples(x_data)
+        scaler = MinMaxScaler()
+        self._anomaly_scores = scaler.fit_transform(anomaly_scores.reshape(-1, 1)).flatten()
         self._normal_buffer = deque(maxlen=self._normal_buffer_size)
         self._anomaly_buffer = deque(maxlen=self._anonaly_buffer_size)
         self._k_neighbor = config["config_model"]["k-neighbor"]
@@ -69,11 +72,15 @@ class Buffer():
             self._anomaly_buffer.append(packet)
             
     def _minmax(self, feature, minimum, maximum):
-        return (feature - minimum) / maximum - minimum
+        return (feature - minimum) / (maximum - minimum)
     
     def extract_state(self, packet, index):
         anomaly_score = self._anomaly_scores[index]
-        print(f"anomaly score: {anomaly_score}")
+        
+        if self._debug:
+            print(f"anomaly score: {anomaly_score}")
+            print(f"len normal buffer: {self._normal_buffer}")
+            print(f"len anomaly buffer: {self._anomaly_buffer}")
 
         if len(self._normal_buffer) > 0:
             normal_points = np.array(self._normal_buffer)
@@ -98,19 +105,24 @@ class Buffer():
 
         if len(combined) > 0:
             distances = cdist([packet], combined, metric='euclidean')[0]
-            k = min(10, len(distances))
+            k = min(self._k_neighbor, len(distances))
             knn_indices = np.argsort(distances)[:k]
             knn_labels = labels[knn_indices]
             neighborhood = 1 if np.any(knn_labels == 1) else 0
         else:
             neighborhood = 0
-            
+        
+        if self._debug:
+            print(f"min_dist_normal: {min_dist_normal}")
+            print(f"avg_dist_normal: {avg_dist_normal}")
+            print(f"min_dist_anomaly: {min_dist_anomaly}")
+            print(f"avg_dist_anomaly: {avg_dist_anomaly}")
+        
         # Normalization
-        anomaly_score = self._minmax(anomaly_score, -0.5, 0.5)
-        min_dist_normal = self._minmax(min_dist_normal, 0, 15)
-        avg_dist_normal = self._minmax(avg_dist_normal, 0, 15)
-        min_dist_anomaly = self._minmax(min_dist_anomaly, 0, 15)
-        avg_dist_anomaly = self._minmax(avg_dist_anomaly, 0, 15)
+        min_dist_normal = self._minmax(min_dist_normal, 0, 161.554944214)
+        avg_dist_normal = self._minmax(avg_dist_normal, 0, 161.554944214)
+        min_dist_anomaly = self._minmax(min_dist_anomaly, 0, 161.554944214)
+        avg_dist_anomaly = self._minmax(avg_dist_anomaly, 0, 161.554944214)
 
         return np.array([
             anomaly_score,
