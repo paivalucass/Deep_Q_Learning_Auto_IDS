@@ -57,7 +57,7 @@ class DQNFeatureGenerator():
             "f_i": 5
         }
             
-        labels_multiclass = labels.drop(columns=["index","Class"])
+        labels_multiclass = labels.drop(columns=["index", "Class"])
         labels_multiclass = labels_multiclass["Description"].str.lower().map(CLASS_MAP).to_numpy()
         labels_binary = labels.drop(columns=["index", "Description"])
         labels_binary = labels_binary["Class"].apply(lambda x: 0 if x.lower() == "normal" else 1).to_numpy()
@@ -67,6 +67,8 @@ class DQNFeatureGenerator():
 
         print(">> Preprocessing raw packets...")
         preprocessed_packets = self.__preprocess_raw_packets(converted_packets, split_into_nibbles=True)
+        
+        print(preprocessed_packets[:50])
         
         return preprocessed_packets, labels_binary, labels_multiclass
             

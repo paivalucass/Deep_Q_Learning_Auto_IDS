@@ -52,6 +52,7 @@ class ReplayMemory():
 class Buffer():
     def __init__(self, x_data, config: typing.Dict):
         print(">> Assembling Isolation Forest...")
+        self._debug = config["debug_mode"]
         iso_forest = IsolationForest(random_state=42, contamination='auto')
         iso_forest.fit(x_data)
         self._normal_buffer_size = config["config_model"]["normal_buffer_size"]
@@ -122,6 +123,7 @@ class Buffer():
 class Environment():
     def __init__(self, config: typing.Dict, dataset_type = "train"):
         self._env_index = 0
+        self._debug = config["debug_mode"]
         self._config = config
         self._positive_reward = config["config_model"]["positive_reward"]
         self._negative_reward = config["config_model"]["negative_reward"]
@@ -185,6 +187,9 @@ class Environment():
         raw_packet = self._env_data[next_idx]
         next_state = self.buffer.extract_state(raw_packet)
         next_state = torch.from_numpy(next_state).unsqueeze(dim=0).float()
+        
+        if self._debug:
+            print(f"STATE: {next_state}")
 
         return next_state, reward, torch.tensor(done).view(1, -1), raw_packet
     
@@ -212,7 +217,7 @@ class Environment():
 
 class DQNModelGenerator():
     def __init__(self, config: typing.Dict, features_names):
-
+        self._debug = config["debug_mode"]
         self._features_names = features_names
         self._state_size = len(features_names)
         self._action_size = NUM_ACTIONS
