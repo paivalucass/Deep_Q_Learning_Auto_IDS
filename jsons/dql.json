@@ -1,5 +1,5 @@
 {
-    "debug_mode": true,
+    "debug_mode": false,
     "feature_generator": "Deep_Q_Network",
     "mode": "generate_features",
     "config": {
