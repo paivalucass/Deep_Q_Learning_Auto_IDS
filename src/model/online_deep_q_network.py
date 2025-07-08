@@ -208,7 +208,6 @@ class Environment():
             print(f"STATE: {next_state}")
             
         next_state = torch.from_numpy(next_state).unsqueeze(dim=0).float()
-        
 
         return next_state, reward, torch.tensor(done).view(1, -1), raw_packet
     
@@ -263,6 +262,7 @@ class DQNModelGenerator():
         self._checkpoint_path = config["config_model"]["save_path"]
         self._target_q_network = copy.deepcopy(self.q_network).eval()
         self._start_time = 0
+        self._index_test = 0
         self._end_time = 0
         self._c_report = None
         self._confusion_matrix = None
@@ -377,7 +377,6 @@ class DQNModelGenerator():
         self.q_network.eval()
         y_true = []
         y_pred = []
-        test_reward = []
 
         state, raw_packet = self._environment_test.reset_env_test() 
         done = False
@@ -391,7 +390,9 @@ class DQNModelGenerator():
             y_true.append(self._environment_test._env_labels[self._environment_test._env_index])  
             y_pred.append(action.item())
             next_state, reward, done, raw_packet = self._environment_test.step_env_test(action)
-            test_reward.append(reward)
+            wandb.log({
+                f"Test Reward {self._index_test}": reward
+            })
             state = next_state
             
         self._end_time = time.time()
@@ -408,7 +409,6 @@ class DQNModelGenerator():
             "Test Precision": self._c_report["Intrusion"]["precision"],
             "Test Recall": self._c_report["Intrusion"]["recall"],
             "Test F1": self._c_report["Intrusion"]["f1-score"],
-            "Test Reward": test_reward,
             "Test Accuracy": self._c_report["accuracy"],
             "Test Time (s)": self._end_time - self._start_time
         }, step=self._cur_episode)

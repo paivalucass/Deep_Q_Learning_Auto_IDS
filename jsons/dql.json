@@ -63,7 +63,7 @@
         "end_dataset_test": 791000,
         "proportion_intrusion": 0.5,
         "target_update_frequency": 1000,
-        "checkpoint_frequency_per_episode": 1000,
+        "checkpoint_frequency_per_episode": 5000,
         "positive_intrusion_multiplier": 1.0,
         "positive_normal_multiplier": 0.8,
         "negative_intrusion_multiplier": 1.0,
