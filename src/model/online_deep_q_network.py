@@ -269,7 +269,7 @@ class DQNModelGenerator():
         
     def __build_network(self):
         return nn.Sequential(
-            nn.Linear(6, 64),
+            nn.Linear(self._state_size, 64),
             nn.LayerNorm(64),
             nn.ReLU(),
             
