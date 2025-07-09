@@ -390,9 +390,6 @@ class DQNModelGenerator():
             y_true.append(self._environment_test._env_labels[self._environment_test._env_index])  
             y_pred.append(action.item())
             next_state, reward, done, raw_packet = self._environment_test.step_env_test(action)
-            wandb.log({
-                f"Test Reward {self._index_test}": reward
-            })
             state = next_state
             
         self._end_time = time.time()
