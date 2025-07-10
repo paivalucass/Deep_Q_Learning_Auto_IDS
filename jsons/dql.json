@@ -21,6 +21,8 @@
         "test_packets_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/Automotive_Ethernet_with_Attack_original_10_17_20_04_test.pcap",
         "y_train_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/y_train.csv",
         "y_test_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/y_test.csv",
+        "injected_only_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/y_test.csv",
+        "avtp_dataset_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/y_test.csv",
         "output_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/features"
     },
     "load_paths": {
@@ -68,8 +70,8 @@
         "positive_normal_multiplier": 0.8,
         "negative_intrusion_multiplier": 1.0,
         "negative_normal_multiplier": 0.8,
-        "normal_buffer_size": 5000,
-        "anomaly_buffer_size": 1500,
+        "normal_buffer_size": 500,
+        "anomaly_buffer_size": 500,
         "k-neighbor": 10,
         "metric": ["Accuracy", "Recall", "F1_Score", "Precision", "ConfusionMatrix"],
         "save_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/DQN_IDS",
