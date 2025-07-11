@@ -27,6 +27,6 @@ cd ..
 
 echo "running python script"
 
-python3 /home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/src/model/online_deep_q_network.py
+python3 /home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/src/model/features.py
 
 echo "post python script"
