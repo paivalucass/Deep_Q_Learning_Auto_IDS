@@ -225,6 +225,7 @@ class DQNFeatureGenerator():
     
 if __name__ ==  "__main__":
     config_file = "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/jsons/dql.json"
-    config = json.load(config_file)
+    with open(config_file, 'r') as config_file:
+            config = json.load(config_file)
     generator = DQNFeatureGenerator(config)
     generator.__avtp_dataset_process()
