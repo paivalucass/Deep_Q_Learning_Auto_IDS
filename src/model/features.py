@@ -124,6 +124,7 @@ class DQNFeatureGenerator():
         return is_in_list
     
     def __read_raw_packets(self, pcap_filepath):
+        print(pcap_filepath)
         raw_packets = rdpcap(pcap_filepath)
 
         raw_packets_list = []
