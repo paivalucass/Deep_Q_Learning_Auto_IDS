@@ -25,6 +25,7 @@ class DQNFeatureGenerator():
         self._data_suffix = config["config"].get('suffix')
         self._reduced_dataset = config["config"].get('reduced_dataset')
         self._dataset = config["config"].get('dataset', DEFAULT_DATASET)
+        self._filter_avtp_packets = True if self._dataset == "AVTP_Intrusion_dataset" else False
         self._paths_dictionary = config["paths"]
         self._dataset_type = dataset_type
         
