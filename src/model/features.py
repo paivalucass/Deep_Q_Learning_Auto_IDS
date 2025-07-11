@@ -104,7 +104,7 @@ class DQNFeatureGenerator():
         
         return preprocessed_packets, labels_binary, None
     
-    def __avtp_dataset_process(self):
+    def avtp_dataset_process(self):
         print("GENERATING AVTP DATASET")
         # Load raw packets
         print(f"PATH ATTACK ONLY: {self._paths_dictionary['injected_only_path']}")
@@ -228,4 +228,4 @@ if __name__ ==  "__main__":
     with open(config_file, 'r') as config_file:
             config = json.load(config_file)
     generator = DQNFeatureGenerator(config)
-    generator.__avtp_dataset_process()
+    generator.avtp_dataset_process()
