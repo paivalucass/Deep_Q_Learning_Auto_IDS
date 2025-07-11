@@ -8,7 +8,7 @@
         "number_of_bytes": 58,
         "multiclass": false,
         "labeling_schema": "TOW_IDS_dataset_one_class",
-        "dataset": "TOW_IDS_dataset",
+        "dataset": "AVTP_Intrusion_dataset",
         "remove_attack": null,
         "suffix": "test",
         "aggregation_method": "Entropy",
@@ -70,11 +70,11 @@
         "positive_normal_multiplier": 0.8,
         "negative_intrusion_multiplier": 1.0,
         "negative_normal_multiplier": 0.8,
-        "normal_buffer_size": 500,
-        "anomaly_buffer_size": 500,
+        "normal_buffer_size": 1000,
+        "anomaly_buffer_size": 300,
         "k-neighbor": 10,
         "metric": ["Accuracy", "Recall", "F1_Score", "Precision", "ConfusionMatrix"],
-        "save_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/DQN_IDS",
+        "save_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/trained_models/DQN_IDS_ep5000",
         "wandb_project": "DQN Research IDS"
     }
 }

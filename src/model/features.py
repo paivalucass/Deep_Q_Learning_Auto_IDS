@@ -40,6 +40,7 @@ class DQNFeatureGenerator():
         return AVAILABLE_DATASETS[self._dataset]()
         
     def __tow_ids_dataset_generate_features(self):
+        print("USING TOW-IDS")
         # Load raw packets
         if self._dataset_type == "train":
             labels = pd.read_csv(self._paths_dictionary["y_train_path"], header=None, names=["index", "Class", "Description"])
@@ -75,6 +76,7 @@ class DQNFeatureGenerator():
         return preprocessed_packets, labels_binary, labels_multiclass
     
     def __avtp_dataset_generate_features(self):
+        print("USING AVTP DATASET")
         # Load raw packets
         raw_injected_only_packets = self.__read_raw_packets(self.paths_dictionary['injected_only_path'])
         injected_only_packets_array = self.__convert_packages(raw_injected_only_packets)
