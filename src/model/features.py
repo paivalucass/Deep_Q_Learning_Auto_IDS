@@ -78,10 +78,10 @@ class DQNFeatureGenerator():
     def __avtp_dataset_generate_features(self):
         print("USING AVTP DATASET")
         # Load raw packets
-        raw_injected_only_packets = self.__read_raw_packets(self.paths_dictionary['injected_only_path'])
+        raw_injected_only_packets = self.__read_raw_packets(self._paths_dictionary['injected_only_path'])
         injected_only_packets_array = self.__convert_packages(raw_injected_only_packets)
         
-        for injected_raw_packets_path in self.paths_dictionary['avtp_dataset_path']:
+        for injected_raw_packets_path in self._paths_dictionary['avtp_dataset_path']:
             # Load raw packets
             raw_packets = self.__read_raw_packets(injected_raw_packets_path)
 
