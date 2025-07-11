@@ -111,11 +111,11 @@ class DQNFeatureGenerator():
         print(f"PATH DATASET: {self._paths_dictionary['avtp_dataset_path']}")
         #Injected Only
         raw_injected_only_packets = self.__read_raw_packets(self._paths_dictionary['injected_only_path'])
-        print(f"size only attacks: {raw_injected_only_packets}")
+        print(f"size only attacks: {len(raw_injected_only_packets)}")
         injected_only_packets_array = self.__convert_packages(raw_injected_only_packets)
         #Dataset
         raw_dataset_packets = self.__read_raw_packets(self._paths_dictionary['avtp_dataset_path'])
-        print(f"size all dataset: {raw_dataset_packets}")
+        print(f"size all dataset: {len(raw_dataset_packets)}")
         
         for injected_raw_packets_path in raw_dataset_packets:
             # Convert loaded packets to np array with uint8_t size
