@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import typing
 import time
+import json
 from scapy.all import *
 from tqdm import tqdm
 
@@ -103,6 +104,39 @@ class DQNFeatureGenerator():
         
         return preprocessed_packets, labels_binary, None
     
+    def __avtp_dataset_process(self):
+        print("GENERATING AVTP DATASET")
+        # Load raw packets
+        print(f"PATH ATTACK ONLY: {self._paths_dictionary['injected_only_path']}")
+        print(f"PATH DATASET: {self._paths_dictionary['avtp_dataset_path']}")
+        #Injected Only
+        raw_injected_only_packets = self.__read_raw_packets(self._paths_dictionary['injected_only_path'])
+        print(f"size only attacks: {raw_injected_only_packets}")
+        injected_only_packets_array = self.__convert_packages(raw_injected_only_packets)
+        #Dataset
+        raw_dataset_packets = self.__read_raw_packets(self._paths_dictionary['avtp_dataset_path'])
+        print(f"size all dataset: {raw_dataset_packets}")
+        
+        for injected_raw_packets_path in raw_dataset_packets:
+            # Convert loaded packets to np array with uint8_t size
+            packets_array = self.__convert_packages(injected_raw_packets_path)
+
+            # Preprocess packets
+            preprocessed_packets = self.__preprocess_raw_packets(packets_array, split_into_nibbles=True)
+
+            # Generate labels
+            labels_binary = self.__generate_labels(injected_raw_packets_path, raw_injected_only_packets)
+            
+        print(f"packets: {preprocessed_packets[:50]}")
+        print(f"size packets: {len(preprocessed_packets[0])}")
+        print(f"number of packets: {len(preprocessed_packets)}")
+        print(f"labels binary: {labels_binary[:50]}")
+        print(f"number of labels: {len(labels_binary)}")
+        
+        np.savez(f"{self._paths_dictionary['avtp_output_path']}/avtp_driving_1", preprocessed_packets)
+        y_df = pd.DataFrame(labels_binary, columns=["Class"])
+        y_df.to_csv(f"{self._paths_dictionary['avtp_output_path']}/avtp_driving_1.csv")
+    
     def __generate_labels(self, packets_list, injected_packets):
         labels_list = []
 
@@ -188,3 +222,9 @@ class DQNFeatureGenerator():
             selected_packets = self.__split_into_nibbles(selected_packets)
 
         return selected_packets
+    
+if __name__ ==  "__main__":
+    config_file = "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/jsons/dql.json"
+    config = json.load(config_file)
+    generator = DQNFeatureGenerator(config)
+    generator.__avtp_dataset_process()
