@@ -116,16 +116,15 @@ class DQNFeatureGenerator():
         #Dataset
         raw_dataset_packets = self.__read_raw_packets(self._paths_dictionary['avtp_dataset_path'])
         print(f"size all dataset: {len(raw_dataset_packets)}")
-        
-        for injected_raw_packets_path in raw_dataset_packets:
-            # Convert loaded packets to np array with uint8_t size
-            packets_array = self.__convert_packages(injected_raw_packets_path)
 
-            # Preprocess packets
-            preprocessed_packets = self.__preprocess_raw_packets(packets_array, split_into_nibbles=True)
+        # Convert packets
+        packets_array = self.__convert_packages(raw_dataset_packets)
 
-            # Generate labels
-            labels_binary = self.__generate_labels(packets_array, injected_only_packets_array)
+        # Preprocess packets
+        preprocessed_packets = self.__preprocess_raw_packets(packets_array, split_into_nibbles=True)
+
+        # Generate labels
+        labels_binary = self.__generate_labels(packets_array, injected_only_packets_array)
             
         print(f"packets: {preprocessed_packets[:50]}")
         print(f"size packets: {len(preprocessed_packets[0])}")
