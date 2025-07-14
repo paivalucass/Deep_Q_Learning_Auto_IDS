@@ -22,8 +22,9 @@
         "y_train_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/y_train.csv",
         "y_test_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/y_test.csv",
         "injected_only_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/single-MPEG-frame.pcap",
-        "avtp_dataset_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/driving_01_injected.pcap",
-        "avtp_output_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/features"
+        "avtp_dataset_path": ["/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/driving_02_injected.pcap", "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/indoors_01_injected.pcap", "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/raw_dataset/indoors_02_injected.pcap"],
+        "avtp_output_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/features",
+        "avtp_test_path": "/home/slurm/pesgradivn/lcap/Deep_Q_Learning_Auto_IDS/features/avtp_driving_1"
     },
     "load_paths": {
         "X_path": "/clusterlivenfs/lcap/ids-online/IDS_ONLINE_FILES/processed_train/X_train_TOW_IDS_dataset_one_class_Wsize_44_Cols_116_Wslide_1_MC_False_sumX_False_removedAttacks_['P_I'].npz",

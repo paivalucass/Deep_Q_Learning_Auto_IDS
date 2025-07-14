@@ -79,62 +79,52 @@ class DQNFeatureGenerator():
     
     def __avtp_dataset_generate_features(self):
         print("USING AVTP DATASET")
+        # Load Packets
+        X = np.load(f"{self._paths_dictionary['avtp_test_path']}.npz")
+        Y = pd.read_csv(f"{self._paths_dictionary['avtp_test_path']}.csv", header=None, names=["index", "Class"])
+        # Load 
+            
+        print(f"packets: {X[:50]}")
+        print(f"size packets: {len(X[0])}")
+        print(f"labels binary: {Y[:50]}")
+        
+        return X, Y, None
+    
+    def avtp_dataset_process(self):
+        print("GENERATING AVTP DATASET")
         # Load raw packets
-        print(f"{self._paths_dictionary['injected_only_path']}")
-        print(f"{self._paths_dictionary['avtp_dataset_path']}")
+        print(f"PATH ATTACK ONLY: {self._paths_dictionary['injected_only_path']}")
         #Injected Only
         raw_injected_only_packets = self.__read_raw_packets(self._paths_dictionary['injected_only_path'])
+        print(f"size only attacks: {len(raw_injected_only_packets)}")
         injected_only_packets_array = self.__convert_packages(raw_injected_only_packets)
-        #Dataset
-        raw_dataset_packets = self.__read_raw_packets(self._paths_dictionary['avtp_dataset_path'])
         
-        for injected_raw_packets_path in raw_dataset_packets:
-            # Convert loaded packets to np array with uint8_t size
-            packets_array = self.__convert_packages(injected_raw_packets_path)
+        count = 1
+        for dataset in self._paths_dictionary['avtp_dataset_path']:
+            count += 1
+            print(f"PATH DATASET: {dataset}")
+            raw_dataset_packets = self.__read_raw_packets(dataset)
+            print(f"size all dataset: {len(raw_dataset_packets)}")
+
+            # Convert packets
+            packets_array = self.__convert_packages(raw_dataset_packets)
 
             # Preprocess packets
             preprocessed_packets = self.__preprocess_raw_packets(packets_array, split_into_nibbles=True)
 
             # Generate labels
             labels_binary = self.__generate_labels(packets_array, injected_only_packets_array)
+                
+            print(f"packets: {preprocessed_packets[:50]}")
+            print(f"size packets: {len(preprocessed_packets[0])}")
+            print(f"number of packets: {len(preprocessed_packets)}")
+            print(f"labels binary: {labels_binary[:50]}")
+            print(f"number of labels: {len(labels_binary)}")
             
-        print(f"packets: {preprocessed_packets[:50]}")
-        print(f"size packets: {len(preprocessed_packets[0])}")
-        print(f"labels binary: {labels_binary[:50]}")
-        
-        return preprocessed_packets, labels_binary, None
-    
-    def avtp_dataset_process(self):
-        print("GENERATING AVTP DATASET")
-        # Load raw packets
-        print(f"PATH ATTACK ONLY: {self._paths_dictionary['injected_only_path']}")
-        print(f"PATH DATASET: {self._paths_dictionary['avtp_dataset_path']}")
-        #Injected Only
-        raw_injected_only_packets = self.__read_raw_packets(self._paths_dictionary['injected_only_path'])
-        print(f"size only attacks: {len(raw_injected_only_packets)}")
-        injected_only_packets_array = self.__convert_packages(raw_injected_only_packets)
-        #Dataset
-        raw_dataset_packets = self.__read_raw_packets(self._paths_dictionary['avtp_dataset_path'])
-        print(f"size all dataset: {len(raw_dataset_packets)}")
-
-        # Convert packets
-        packets_array = self.__convert_packages(raw_dataset_packets)
-
-        # Preprocess packets
-        preprocessed_packets = self.__preprocess_raw_packets(packets_array, split_into_nibbles=True)
-
-        # Generate labels
-        labels_binary = self.__generate_labels(packets_array, injected_only_packets_array)
+            np.savez(f"{self._paths_dictionary['avtp_output_path']}/avtp_{count}", preprocessed_packets)
             
-        print(f"packets: {preprocessed_packets[:50]}")
-        print(f"size packets: {len(preprocessed_packets[0])}")
-        print(f"number of packets: {len(preprocessed_packets)}")
-        print(f"labels binary: {labels_binary[:50]}")
-        print(f"number of labels: {len(labels_binary)}")
-        
-        np.savez(f"{self._paths_dictionary['avtp_output_path']}/avtp_driving_1", preprocessed_packets)
-        y_df = pd.DataFrame(labels_binary, columns=["Class"])
-        y_df.to_csv(f"{self._paths_dictionary['avtp_output_path']}/avtp_driving_1.csv")
+            y_df = pd.DataFrame(labels_binary, columns=["Class"])
+            y_df.to_csv(f"{self._paths_dictionary['avtp_output_path']}/avtp_{count}.csv")
     
     def __generate_labels(self, packets_list, injected_packets):
         labels_list = []
