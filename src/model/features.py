@@ -82,13 +82,14 @@ class DQNFeatureGenerator():
         # Load Packets
         X = np.load(f"{self._paths_dictionary['avtp_test_path']}.npz")
         Y = pd.read_csv(f"{self._paths_dictionary['avtp_test_path']}.csv", header=None, names=["index", "Class"])
+        labels_binary = Y.drop(columns=["index"])
         # Load 
             
         print(f"packets: {X[:50]}")
         print(f"size packets: {len(X[0])}")
         print(f"labels binary: {Y[:50]}")
         
-        return X, Y, None
+        return X, labels_binary, None
     
     def avtp_dataset_process(self):
         print("GENERATING AVTP DATASET")
