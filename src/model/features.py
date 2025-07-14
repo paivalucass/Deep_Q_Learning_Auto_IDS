@@ -82,9 +82,9 @@ class DQNFeatureGenerator():
         # Load Packets
         X = np.load(f"{self._paths_dictionary['avtp_test_path']}.npz")
         Y = pd.read_csv(f"{self._paths_dictionary['avtp_test_path']}.csv", header=None, names=["index", "Class"])
+        Y = Y.iloc[1:]
         print(Y[:50])
-        labels_binary = Y.drop(columns=["index"])
-        labels_binary = labels_binary["Class"].to_numpy()
+        labels_binary = Y["Class"].astype(int).to_numpy()
         X = X.f.arr_0
         # Load 
             
