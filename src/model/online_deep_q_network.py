@@ -150,12 +150,10 @@ class Environment():
         self._negative_normal_multiplier = config["config_model"]["negative_normal_multiplier"]
         self._max_steps = config["config_model"].get("n_steps", 10000)
         self._n_episodes_train = config["config_model"]["n_episodes_train"]
-        self._proportion_intrusion = config["config_model"]["proportion_intrusion"]
         self._is_generalization = config["config_model"]["generalization"]
         self._matrix_normal_points = []
         self._matrix_anomaly_points = []
         self._distance_features = []
-        self._proportion_normal = 1 - self._proportion_intrusion
         self._dataset_type = dataset_type
         self._feature_generator = DQNFeatureGenerator(config, dataset_type=dataset_type)
         self._env_data, self._env_labels, self._env_labels_multiclass = self.__build_dataset()
@@ -186,6 +184,8 @@ class Environment():
     def reset_env_test(self):
         self._env_index = 0
         
+        self.buffer._anomaly_buffer.clear()
+        self.buffer._normal_buffer.clear()
         raw_packet = self._env_data[0]
         state = self.buffer.extract_state(raw_packet, self._start_index)
         return torch.from_numpy(state).unsqueeze(dim=0).float(), raw_packet
@@ -247,6 +247,7 @@ class DQNModelGenerator():
         self._n_episodes_train = config["config_model"]["n_episodes_train"]
         self._n_episodes_test = config["config_model"]["n_episodes_test"]
         self._n_steps = config["config_model"]["n_steps"]
+        self._bootstrap_steps = config["config_model"]["bootstrap_steps"]
         self._checkpoint_frequency = config["config_model"]["checkpoint_frequency_per_episode"]
         self._replay_memory = ReplayMemory(config)
         self._environment_train = Environment(config, "train")
@@ -295,6 +296,7 @@ class DQNModelGenerator():
     def deep_q_learning(self):
         """ Initialize Neural Network Optimizer """
         self.q_network.train()
+        initial_buffer_state_counter = 0
 
         optim = AdamW(self.q_network.parameters(), lr=self._alpha)
         stats = {'MSE Loss': [], 'Returns': []}
@@ -306,8 +308,17 @@ class DQNModelGenerator():
             ep_return = 0
 
             while not done:
+                if initial_buffer_state_counter < self._bootstrap_steps:
+                    # Uses real label to feed the buffer initially
+                    true_idx = self._environment_train._start_index + self._environment_train._env_index
+                    true_label = self._environment_train._env_labels[true_idx]
+                    action = torch.tensor([[true_label]])
+                else:
+                    # Política normal (ε-greedy)
+                    action = self.__policy(state)
+                initial_buffer_state_counter += 1
+                
                 # Calculate an action to be taken, based on the policy output
-                action = self.__policy(state)
                 self._environment_train.buffer.update_buffer(raw_packet, action)
                 
                 # Apply the action at the enviroment and returns new state and reward 
@@ -348,7 +359,7 @@ class DQNModelGenerator():
                 ep_return += reward.item()
                 
             if self._epsilon > self._epsilon_min:
-                self._epsilon *= 0.9998
+                self._epsilon *= 0.998
 
             stats["Returns"].append(ep_return)
             
